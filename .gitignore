@@ -1,0 +1,5 @@
+.idea
+server/fastapi/__pycache__
+server/fastapi/.idea
+server/vue/.vscode
+server/vue/node_modules
