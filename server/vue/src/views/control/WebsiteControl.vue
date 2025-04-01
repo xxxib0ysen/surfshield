@@ -281,4 +281,9 @@ const submitType = async () => {
     margin-top: 18px;
     height: auto;
 }
+
+.el-collapse-item__header.is-active {
+  color: inherit !important;   
+  font-weight: normal;        
+}
 </style>
