@@ -1,7 +1,22 @@
-.idea
-server/fastapi/__pycache__
-server/fastapi/.idea
-server/vue/.vscode
-server/vue/node_modules
+# IDE
+.idea/
+.vscode/
+server/fastapi/.idea/
+server/vue/.vscode/
+
+# Python 编译缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# Server: FastAPI
+server/fastapi/__pycache__/
 server/fastapi/.env
 server/fastapi/test_main.http
+
+# Client: 本地批处理脚本
+client/*.bat
+
+# Frontend: Vue3
+server/vue/node_modules/
+dist/
