@@ -162,11 +162,6 @@ const loadAll = async () => {
 
 // 添加规则
 const openAddRuleDialog = () => {
-    const currentTypeId = activePanels.value[0]
-    const currentType = websiteTypes.value.find(t => t.type_id === currentTypeId)
-    if (currentType?.status === 0) {
-        return ElMessage.warning('该类型已禁用，无法添加规则')
-    }
     newRule.value = { website_url: '', type_id: null, status: 1 }
     showAddRuleDialog.value = true
 }
@@ -182,6 +177,12 @@ const submitRule = async () => {
     if (!type_id || !website_url.trim()) {
         return ElMessage.warning('请填写完整内容')
     }
+     // 校验选择的类型是否启用
+    const selectedType = websiteTypes.value.find(t => t.type_id === type_id)
+    if (!selectedType || selectedType.status === 0) {
+        return ElMessage.warning('该网站类型已禁用，无法添加规则')
+    }
+
     const res = await addWebsiteRule(newRule.value)
     if (res.data.code === 200) {
         ElMessage.success('添加成功')
