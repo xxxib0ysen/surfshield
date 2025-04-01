@@ -1,36 +1,57 @@
 <template>
-    <el-aside width="200px" class="side-menu">
-      <div class="menu-title">管理中心</div>
-      <el-menu
-        router
-        :default-active="route.path"
-        background-color="#2c2f36"
-        text-color="#fff"
-        active-text-color="#fff"
-        unique-opened
-      >
-        <el-menu-item index="/home">
-          <el-icon><House /></el-icon>
-          <span>首页概况</span>
-        </el-menu-item>
-        <el-menu-item index="/management">
-          <el-icon><Monitor /></el-icon>
-          <span>用户终端管理</span>
-        </el-menu-item>
-        <el-menu-item index="/policy">
+  <el-aside width="200px" class="side-menu">
+    <div class="menu-title">管理中心</div>
+    <el-menu 
+      router 
+      :default-active="route.path" 
+      background-color="#2c2f36" 
+      text-color="#fff" 
+      active-text-color="#fff"
+      unique-opened>
+      <el-menu-item index="/home">
+        <el-icon>
+          <House />
+        </el-icon>
+        <span>首页概况</span>
+      </el-menu-item>
+      <el-menu-item index="/management">
+        <el-icon>
+          <Monitor />
+        </el-icon>
+        <span>用户终端管理</span>
+      </el-menu-item>
+
+      <el-sub-menu index="/policy">
+        <template #title>
           <el-icon><Cpu /></el-icon>
           <span>策略管控</span>
-        </el-menu-item>
-        <el-menu-item index="/remote">
-          <el-icon><VideoPlay /></el-icon>
-          <span>实时管控</span>
-        </el-menu-item>
-        <el-menu-item index="/log">
-          <el-icon><Document /></el-icon>
-          <span>日志分析</span>
-        </el-menu-item>
-      </el-menu>
-    </el-aside>
+        </template>
+        <el-menu-item-group>
+          <el-menu-item index="/policy/website">
+            <el-icon><Link /></el-icon>
+            <span>网站访问控制</span>
+          </el-menu-item>
+          <el-menu-item index="/policy/process">
+            <el-icon><Timer /></el-icon>
+            <span>进程运行控制</span>
+          </el-menu-item>
+        </el-menu-item-group>
+      </el-sub-menu>
+
+      <el-menu-item index="/remote">
+        <el-icon>
+          <VideoPlay />
+        </el-icon>
+        <span>实时管控</span>
+      </el-menu-item>
+      <el-menu-item index="/log">
+        <el-icon>
+          <Document />
+        </el-icon>
+        <span>日志分析</span>
+      </el-menu-item>
+    </el-menu>
+  </el-aside>
 </template>
 
 <script setup>
@@ -77,4 +98,3 @@ const route = useRoute()
   background-color: #2774D8;
 }
 </style>
-  

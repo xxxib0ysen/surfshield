@@ -29,6 +29,10 @@ import TopNav from './TopNav.vue'
   height: 100vh;
 }
 
+.header {
+  padding: 0;
+}
+
 .main-container {
   flex: 1;
   display: flex;
@@ -41,7 +45,7 @@ import TopNav from './TopNav.vue'
   flex: 1;
   overflow-y: auto;
   background-color: #f5f7fa;
-  padding: 20px;
+  padding: 0;
   box-sizing: border-box;
 }
 
