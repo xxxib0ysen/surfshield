@@ -96,6 +96,7 @@ def add_website_rule(req: WebsiteRuleAddRequest):
 
     urls = [url.strip() for url in req.website_url.splitlines() if url.strip()]
     for url in urls:
+        url = url.lower()
         if not validate_url(url) and "*" not in url and ">" not in url:
             return error_response(f"无效网址格式: {url}")
 
@@ -151,7 +152,7 @@ def get_rules_grouped_by_type():
     try:
         with conn.cursor(pymysql.cursors.DictCursor) as cursor:
             cursor.execute("""
-                select wt.type_id, wt.type_name,
+                select wt.type_id, wt.type_name, wt.status as type_status,
                        wc.website_id, wc.website_url, wc.status, wc.createdon
                 from website_type wt
                 left join website_control wc on wt.type_id = wc.type_id
@@ -165,6 +166,7 @@ def get_rules_grouped_by_type():
                     result[tid] = {
                         "type_id": tid,
                         "type_name": row["type_name"],
+                        "type_status": row["type_status"],
                         "rules": []
                     }
                 if row["website_id"]:

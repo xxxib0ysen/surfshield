@@ -37,10 +37,8 @@ def format_datetime(dt):
 
 # 验证 URL 是否符合格式（支持通配符）
 def validate_url(url: str) -> bool:
-    pattern = re.compile(
-        r'^(https?:\/\/)?([a-zA-Z0-9\-._~:/?#@!$&\'()*+,;=%*<>]+)$'
-    )
-    return bool(pattern.match(url))
+    domain_regex = r'^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$'
+    return re.fullmatch(domain_regex, url) is not None
 
 
 # 获取客户端 IP

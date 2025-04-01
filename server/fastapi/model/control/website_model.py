@@ -58,4 +58,5 @@ class WebsiteRuleItem(BaseModel):
 class WebsiteRuleGroupByType(BaseModel):
     type_id: int
     type_name: str
+    type_status: int
     rules: List[WebsiteRuleItem]
