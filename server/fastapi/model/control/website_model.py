@@ -1,60 +1,61 @@
-from pydantic import BaseModel, Field, constr
-from typing import Optional, Dict, List
+from pydantic import BaseModel, Field
+from typing import Optional, List, Dict
 from datetime import datetime
 
-# 请求模型
-# -------
-
 # 添加网站类型
-class WebsiteTypeCreate(BaseModel):
-    type_name: constr(strip_whitespace=True, min_length=1, max_length=50) = Field(..., description="网站类型名称")
-    status: Optional[int] = Field(0, ge=0, le=1, description="类型状态，默认禁用")
-
-# 更新网站类型启用状态
-class WebsiteTypeUpdateStatus(BaseModel):
-    type_id: int
-    status: int = Field(..., ge=0, le=1, description="类型状态（0=禁用，1=启用）")
+class WebsiteTypeAddRequest(BaseModel):
+    type_name: str = Field(..., description="网站类型名称")
+    status: Optional[int] = Field(0, description="类型启用状态，默认禁用")
 
 # 删除网站类型
-class WebsiteTypeDelete(BaseModel):
+class WebsiteTypeDeleteRequest(BaseModel):
     type_id: int
 
-# 添加网站规则（支持批量）
-class WebsiteRuleCreate(BaseModel):
-    website_url: constr(strip_whitespace=True, min_length=1, max_length=1000) = Field(...,
-                                                                                      description="支持多个网址，换行分隔")
+# 修改网站类型状态
+class WebsiteTypeUpdateStatusRequest(BaseModel):
     type_id: int
-    status: Optional[int] = Field(0, ge=0, le=1, description="规则状态，默认禁用")
+    status: int
 
-# 删除某条规则
-class WebsiteRuleDelete(BaseModel):
+# 添加网站规则
+class WebsiteRuleAddRequest(BaseModel):
+    website_url: str
+    type_id: int
+    status: Optional[int] = Field(0, description="规则状态，默认禁用")
+
+# 删除网站规则
+class WebsiteRuleDeleteRequest(BaseModel):
     website_id: int
 
-# 更新某条规则的启用状态
-class WebsiteRuleUpdateStatus(BaseModel):
+# 启用/禁用规则
+class WebsiteRuleUpdateStatusRequest(BaseModel):
     website_id: int
-    status: int = Field(..., ge=0, le=1, description="0=禁用，1=启用")
+    status: int
 
-
-# 响应模型
-# -------
-
-# 获取网站类型
-class WebsiteTypeOut(BaseModel):
+# 网站类型响应
+class WebsiteTypeResponse(BaseModel):
     type_id: int
     type_name: str
     status: int
     createdon: datetime
-    last_modified: Optional[datetime] = None
+    last_modified: Optional[datetime]
 
-# 获取网站规则
-class WebsiteRuleOut(BaseModel):
+# 网站规则响应
+class WebsiteRuleResponse(BaseModel):
     website_id: int
     website_url: str
     type_name: str
     status: int
     createdon: datetime
 
-# 分组响应结构：{ type_name: [WebsiteRuleOut, ...] }
-class WebsiteRuleGroupedResponse(BaseModel):
-    __root__: Dict[str, List[WebsiteRuleOut]]
+# 单条规则项
+class WebsiteRuleItem(BaseModel):
+    website_id: int
+    website_url: str
+    status: int
+    createdon: datetime
+
+# 分组响应
+class WebsiteRuleGroupByType(BaseModel):
+    type_id: int
+    type_name: str
+    rules: List[WebsiteRuleItem]
