@@ -1,13 +1,20 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+from routers.control import website_control
 
+app = FastAPI(
+    title="用户上网行为管控平台",
+    version="1.0.0"
+)
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+# 允许跨域（默认允许全部）
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-
-@app.get("/hello/{name}")
-async def say_hello(name: str):
-    return {"message": f"Hello {name}"}
+app.include_router(website_control.router, prefix="/website_control", tags=["网站访问控制"])
