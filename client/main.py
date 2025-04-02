@@ -6,6 +6,7 @@ from threading import Thread
 
 from agent.control.intercept import start_network_intercept
 from agent.control.rule_sync import sync_rules
+from agent.control.process_control import run_process_guard
 from config import config
 
 # 确保日志目录存在
@@ -14,7 +15,7 @@ def ensure_log_dir():
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-# 启动规则同步线程
+# 规则同步线程
 def start_rule_sync_loop():
     def loop():
         while True:
@@ -23,11 +24,19 @@ def start_rule_sync_loop():
     thread = Thread(target=loop, daemon=True)
     thread.start()
 
+# 进程控制线程
+def start_process_guard_loop():
+    Thread(target=run_process_guard, daemon=True).start()
+
 def main():
     print("客户端启动中...")
     ensure_log_dir()
+
     start_rule_sync_loop()
+
     start_network_intercept()
+
+    start_process_guard_loop()
 
     while True:
         time.sleep(60)
