@@ -117,13 +117,13 @@ const submitAdd = async () => {
     loading.value = true
     try {
         const res = await addBatchProcess({ process_list: list })
-        if (res.code === 200) {
+        if (res.data.code === 200) {
             ElMessage.success('添加成功')
             dialogVisible.value = false
             addInput.value = ''
             await fetchData()
         } else {
-            ElMessage.error(res.message || '添加失败')
+            ElMessage.error(res.data.message || '添加失败')
         }
     } catch (e) {
         ElMessage.error('添加出错')
@@ -137,11 +137,11 @@ const handleDelete = async (id) => {
     try {
         await ElMessageBox.confirm('确认删除该规则？', '提示', { type: 'warning' })
         const res = await deleteSingleProcess({ id })
-        if (res.code === 200) {
+        if (res.data.code === 200) {
             ElMessage.success('删除成功')
             fetchData()
         } else {
-            ElMessage.error(res.message || '删除失败')
+            ElMessage.error(res.data.message || '删除失败')
         }
     } catch (e) {
         if (e !== 'cancel') {
@@ -158,11 +158,11 @@ const handleBatchDelete = async () => {
     try {
         await ElMessageBox.confirm(`确认删除 ${ids.length} 条规则？`, '提示', { type: 'warning' })
         const res = await deleteBatchProcess({ ids })
-        if (res.code === 200) {
+        if (res.data.code === 200) {
             ElMessage.success('批量删除成功')
             fetchData()
         } else {
-            ElMessage.error(res.message || '删除失败')
+            ElMessage.error(res.data.message || '删除失败')
         }
     } catch (e) {
         ElMessage.error('操作取消或删除失败')
@@ -183,11 +183,11 @@ const handleToggle = async (id, nextStatus) => {
         })
 
         const res = await toggleProcessStatus({ id, status: nextStatus })
-        if (res.code === 200) {
+        if (res.data.code === 200) {
             ElMessage.success(`${actionText}成功`)
             fetchData()
         } else {
-            ElMessage.error(res.message || `${actionText}失败`)
+            ElMessage.error(res.data.message || `${actionText}失败`)
             if (originalItem) originalItem.status = originalStatus // 回滚
         }
     } catch (e) {
