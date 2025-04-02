@@ -3,44 +3,38 @@
         <el-main>
             <!-- 操作 -->
             <el-card shadow="never" class="card-spacing">
-                <el-icon size="small"><Tickets /></el-icon>
+                <el-icon size="small">
+                    <Tickets />
+                </el-icon>
                 <span> 数据列表</span>
 
                 <el-button size="mini" circle @click="fetchData" style="float:right" :loading="loading">
-                    <el-icon><RefreshRight /></el-icon>
+                    <el-icon>
+                        <RefreshRight />
+                    </el-icon>
                 </el-button>
                 <el-button size="mini" @click="dialogVisible = true"
                     style="float:right;margin-right: 15px">添加</el-button>
-                <el-button  size="mini" :disabled="!multipleSelection.length" @click="handleBatchDelete"
+                <el-button size="mini" :disabled="!multipleSelection.length" @click="handleBatchDelete"
                     style="margin-left: 15px">
                     删除所选
                 </el-button>
             </el-card>
 
             <!-- 数据 -->
-            <el-table
-                v-loading="loading"
-                :data="tableData"
-                border
-                style="width: 100%;"
-                height="500px"  
-                @selection-change="handleSelectionChange"
-                >
+            <el-table v-loading="loading" :data="tableData" border style="width: 100%;" height="500px"
+                @selection-change="handleSelectionChange">
                 <el-table-column type="selection" width="55" />
                 <el-table-column label="进程名称/路径" prop="process_name" />
                 <el-table-column label="状态" width="100">
                     <template #default="scope">
-                    <el-switch
-                        v-model="scope.row.status"
-                        :active-value="1"
-                        :inactive-value="0"
-                        @change="val => handleToggle(scope.row.id, val)"
-                    />
+                        <el-switch v-model="scope.row.status" :active-value="1" :inactive-value="0"
+                            @change="val => handleToggle(scope.row.id, val)" />
                     </template>
                 </el-table-column>
                 <el-table-column label="操作" width="100">
                     <template #default="scope">
-                    <el-button type="text" size="small" @click="handleDelete(scope.row.id)">删除</el-button>
+                        <el-button type="text" size="small" @click="handleDelete(scope.row.id)">删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
@@ -48,19 +42,24 @@
         </el-main>
 
         <!-- 添加进程 -->
-        <el-dialog title="请添加进程" v-model="dialogVisible" width="500px">
+        <el-dialog title="添加进程" v-model="dialogVisible" width="500px">
+            <el-alert type="info" :closable="false" show-icon
+                title="支持关键词匹配;系统将自动去重并进行包含匹配（不支持完整路径）。"
+                style="margin-bottom: 20px" />
+
             <el-form>
-                <el-form-item label="进程名或路径">
+                <el-form-item label="进程关键词">
                     <el-input type="textarea" rows="6" v-model="addInput"
-                        placeholder="多个进程以换行分隔，如：\ngame.exe\nC:\\App\\vpn.exe\n支持路径和文件名" />
+                        placeholder="请输入进程名或关键词，每行一个，如：game.exe、vpn、chrome" />
                 </el-form-item>
-                <el-alert type="info" title="支持输入完整路径或文件名，每行一个，系统自动去重" :closable="false" />
             </el-form>
+
             <template #footer>
                 <el-button @click="dialogVisible = false">取消</el-button>
                 <el-button type="primary" @click="submitAdd">添加</el-button>
             </template>
         </el-dialog>
+
     </el-container>
 </template>
 
@@ -128,28 +127,28 @@ const handleBatchDelete = async () => {
 
 // 状态切换
 const handleToggle = async (id, nextStatus) => {
-  const actionText = nextStatus === 1 ? '启用' : '禁用'
-  const originalItem = tableData.value.find(item => item.id === id)
-  const originalStatus = originalItem ? originalItem.status : (nextStatus === 1 ? 0 : 1)
+    const actionText = nextStatus === 1 ? '启用' : '禁用'
+    const originalItem = tableData.value.find(item => item.id === id)
+    const originalStatus = originalItem ? originalItem.status : (nextStatus === 1 ? 0 : 1)
 
-  try {
-    await ElMessageBox.confirm(`确定要${actionText}该规则？`, '确认操作', {
-      type: 'warning',
-      confirmButtonText: '确定',
-      cancelButtonText: '取消'
-    })
+    try {
+        await ElMessageBox.confirm(`确定要${actionText}该规则？`, '确认操作', {
+            type: 'warning',
+            confirmButtonText: '确定',
+            cancelButtonText: '取消'
+        })
 
-    const res = await toggleProcessStatus({ id, status: nextStatus })
-    if (res.code === 200) {
-      ElMessage.success(`${actionText}成功`)
-      fetchData()
-    } else {
-      ElMessage.error(res.message || `${actionText}失败`)
-      if (originalItem) originalItem.status = originalStatus // 还原
+        const res = await toggleProcessStatus({ id, status: nextStatus })
+        if (res.code === 200) {
+            ElMessage.success(`${actionText}成功`)
+            fetchData()
+        } else {
+            ElMessage.error(res.message || `${actionText}失败`)
+            if (originalItem) originalItem.status = originalStatus // 还原
+        }
+    } catch (e) {
+        if (originalItem) originalItem.status = originalStatus
     }
-  } catch (e) {
-    if (originalItem) originalItem.status = originalStatus 
-  }
 }
 
 // 多选变化
