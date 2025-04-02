@@ -16,6 +16,7 @@ server/fastapi/test_main.http
 
 # Client: 本地批处理脚本
 client/*.bat
+client/logs/
 
 # Frontend: Vue3
 server/vue/node_modules/
