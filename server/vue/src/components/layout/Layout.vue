@@ -45,7 +45,7 @@ import TopNav from './TopNav.vue'
   flex: 1;
   overflow-y: auto;
   background-color: #f5f7fa;
-  padding: 0;
+  padding: 8px;
   box-sizing: border-box;
 }
 
