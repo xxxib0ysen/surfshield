@@ -5,7 +5,7 @@ from utils.common import format_datetime, is_valid_process_keyword
 from datetime import datetime
 
 # 添加单个进程
-def add_single_process(process_name: str):
+def add_single_process(process_name: str, status: int ):
     process_name = process_name.strip().lower()
     if not process_name:
         return error_response("进程名称不能为空", HTTP_BAD_REQUEST)
@@ -18,7 +18,7 @@ def add_single_process(process_name: str):
         cursor = conn.cursor()
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         sql = "insert into process_control (process_name, status, create_time) values (%s, %s, %s)"
-        cursor.execute(sql, (process_name, 1, now))
+        cursor.execute(sql, (process_name, status, now))
         conn.commit()
         return success_response(message="添加成功")
     except Exception as e:
@@ -28,7 +28,7 @@ def add_single_process(process_name: str):
         conn.close()
 
 # 批量添加
-def add_batch_process(process_list: list):
+def add_batch_process(process_list: list, status: int):
     if not isinstance(process_list, list):
         return error_response("进程列表格式错误，应为数组", HTTP_BAD_REQUEST)
 
@@ -46,7 +46,7 @@ def add_batch_process(process_list: list):
         cursor = conn.cursor()
         now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         sql = "insert into process_control (process_name, status, create_time) values (%s, %s, %s)"
-        values = [(name, 1, now) for name in cleaned]
+        values = [(name, status, now) for name in cleaned]
         cursor.executemany(sql, values)
         conn.commit()
         return success_response(message="批量添加成功", data={"新增数量": len(values)})

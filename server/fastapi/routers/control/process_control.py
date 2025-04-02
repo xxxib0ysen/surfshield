@@ -7,12 +7,12 @@ router = APIRouter()
 # 添加单个
 @router.post("/add_single")
 async def add_single(req: AddSingleProcessRequest):
-    return add_single_process(req.process_name)
+    return add_single_process(req.process_name, status=req.status)
 
 # 批量添加
 @router.post("/add_batch")
 async def add_batch(req: AddProcessRequest):
-    return add_batch_process(req.process_list)
+    return add_batch_process(req.process_list, status=req.status)
 
 # 删除单个
 @router.post("/delete_single")
