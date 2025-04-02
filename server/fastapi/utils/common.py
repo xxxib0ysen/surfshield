@@ -40,6 +40,17 @@ def validate_url(url: str) -> bool:
     domain_regex = r'^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$'
     return re.fullmatch(domain_regex, url) is not None
 
+import re
+
+# 校验是否为合法进程关键词（进程名或关键词）
+def is_valid_process_keyword(name: str) -> bool:
+    # 排除完整路径（如 C:\xxx\xxx.exe 或 /usr/bin/xxx）
+    if "\\" in name or "/" in name or re.match(r"^[a-zA-Z]:\\", name):
+        return False
+    if not re.fullmatch(r"[a-zA-Z0-9_\-\.]+", name):
+        return False
+    return True
+
 
 # 获取客户端 IP
 def get_client_ip(request: Request) -> str:

@@ -1,14 +1,17 @@
 from utils.connect import create_connection
 from utils.response import success_response, error_response
 from utils.status_code import *
-from utils.common import format_datetime
+from utils.common import format_datetime, is_valid_process_keyword
 from datetime import datetime
 
 # 添加单个进程
 def add_single_process(process_name: str):
-    process_name = process_name.strip()
+    process_name = process_name.strip().lower()
     if not process_name:
         return error_response("进程名称不能为空", HTTP_BAD_REQUEST)
+
+    if not is_valid_process_keyword(process_name):
+        return error_response("不允许添加完整路径或非法进程名称，请仅填写进程名或关键词", HTTP_BAD_REQUEST)
 
     try:
         conn = create_connection()
@@ -24,15 +27,19 @@ def add_single_process(process_name: str):
         cursor.close()
         conn.close()
 
-
 # 批量添加
 def add_batch_process(process_list: list):
     if not isinstance(process_list, list):
         return error_response("进程列表格式错误，应为数组", HTTP_BAD_REQUEST)
 
-    cleaned = list(set([p.strip() for p in process_list if isinstance(p, str) and p.strip()]))
+    # 去重 & 清洗
+    cleaned = list(set([
+        p.strip().lower() for p in process_list
+        if isinstance(p, str) and p.strip() and is_valid_process_keyword(p.strip())
+    ]))
+
     if not cleaned:
-        return error_response("无有效进程", HTTP_BAD_REQUEST)
+        return error_response("无有效进程，格式应为进程名或关键词，不能是路径", HTTP_BAD_REQUEST)
 
     try:
         conn = create_connection()
