@@ -13,48 +13,44 @@
                     </el-icon>
                 </el-button>
                 <el-button size="mini" @click="openAddRuleDialog" style="float:right;margin-right: 15px">添加</el-button>
-                <el-button type="primary" size="mini" @click="openTypeDialog"
+                <el-button size="mini" @click="openTypeDialog"
                     style="float:right;margin-right: 15px">网站类型</el-button>
             </el-card>
             <!-- 数据表 -->
-            <el-collapse v-model="activePanels" accordion style="margin-top: 28px;">
-                <el-collapse-item v-for="type in websiteTypes" :key="type.type_id" :name="type.type_id">
-                    <template #title>
-                        <el-icon style="font-size: 18px; margin-right: 10px;">
-                            <CircleCheck />
-                        </el-icon>
-                        <span style="font-weight:bold;font-size: 14px;">{{ type.type_name }}</span>
-                        <span style="margin-left: 20px; font-size: 12px; color: gray;">更新于 {{ type.last_modified
-                            }}</span>
-                        <el-switch
-                            :model-value="type.status"
-                            :active-value="1"
-                            :inactive-value="0"
-                            @click.stop
-                            @change="handleTypeStatusChange(type, $event)"
-                            size="small"
-                            style="margin-left: 40px;"
-                        />
-                    </template>
-                    <el-scrollbar max-height="250px">
-                        <el-table :data="rules[type.type_id] || []" style="width: 100%;" border>
-                            <el-table-column prop="website_url" label="网址" />
-                            <el-table-column label="状态">
-                                <template #default="{ row }">
-                                    <el-switch v-model="row.status" :active-value="1" :inactive-value="0" :disabled="type.status === 0"
-                                        @change="changeStatus(row)" />
-                                </template>
-                            </el-table-column>
-                            <el-table-column label="操作">
-                                <template #default="{ row }">
-                                    <el-button type="text" size="mini" :disabled="type.status === 0"
-                                        @click="deleteRule(row.website_id)">删除</el-button>
-                                </template>
-                            </el-table-column>
-                        </el-table>
-                    </el-scrollbar>
-                </el-collapse-item>
-            </el-collapse>
+            <el-card class="card-spacing" shadow="never" style="margin-top: 28px;">
+                <el-collapse v-model="activePanels" accordion>
+                    <el-collapse-item v-for="type in websiteTypes" :key="type.type_id" :name="type.type_id">
+                        <template #title>
+                            <el-icon style="font-size: 18px; margin-right: 10px;">
+                                <CircleCheck />
+                            </el-icon>
+                            <span style="font-weight:bold;font-size: 14px;">{{ type.type_name }}</span>
+                            <span style="margin-left: 20px; font-size: 12px; color: gray;">更新于 {{ type.last_modified
+                                }}</span>
+                            <el-switch :model-value="type.status" :active-value="1" :inactive-value="0" @click.stop
+                                @change="handleTypeStatusChange(type, $event)" size="small"
+                                style="margin-left: 40px;" />
+                        </template>
+                        <el-scrollbar max-height="250px">
+                            <el-table :data="rules[type.type_id] || []" style="width: 100%;" border>
+                                <el-table-column prop="website_url" label="网址" />
+                                <el-table-column label="状态">
+                                    <template #default="{ row }">
+                                        <el-switch v-model="row.status" :active-value="1" :inactive-value="0"
+                                            :disabled="type.status === 0" @change="changeStatus(row)" />
+                                    </template>
+                                </el-table-column>
+                                <el-table-column label="操作">
+                                    <template #default="{ row }">
+                                        <el-button type="text" size="mini" :disabled="type.status === 0"
+                                            @click="deleteRule(row.website_id)">删除</el-button>
+                                    </template>
+                                </el-table-column>
+                            </el-table>
+                        </el-scrollbar>
+                    </el-collapse-item>
+                </el-collapse>
+            </el-card>
         </el-main>
 
         <!-- 添加规则 -->
@@ -107,7 +103,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-    getWebsiteType, addWebsiteType, deleteWebsiteType,updateWebsiteTypeStatus ,
+    getWebsiteType, addWebsiteType, deleteWebsiteType, updateWebsiteTypeStatus,
     getWebsiteRule, addWebsiteRule, deleteWebsiteRule, updateWebsiteStatus
 } from '@/api/control/website_control'
 
@@ -177,7 +173,7 @@ const submitRule = async () => {
     if (!type_id || !website_url.trim()) {
         return ElMessage.warning('请填写完整内容')
     }
-     // 校验选择的类型是否启用
+    // 校验选择的类型是否启用
     const selectedType = websiteTypes.value.find(t => t.type_id === type_id)
     if (!selectedType || selectedType.status === 0) {
         return ElMessage.warning('该网站类型已禁用，无法添加规则')
@@ -219,26 +215,26 @@ const changeStatus = async (row) => {
 
 // 更新类型状态
 const handleTypeStatusChange = async (type, nextStatus) => {
-  const originalStatus = type.status
-  const action = nextStatus === 1 ? '启用' : '禁用'
+    const originalStatus = type.status
+    const action = nextStatus === 1 ? '启用' : '禁用'
 
-  try {
-    await ElMessageBox.confirm(`确定要${action}该网站类型？`, '确认操作', {
-      type: 'warning'
-    })
+    try {
+        await ElMessageBox.confirm(`确定要${action}该网站类型？`, '确认操作', {
+            type: 'warning'
+        })
 
-    const res = await updateWebsiteTypeStatus(type.type_id, nextStatus)
-    if (res.data.code === 200) {
-      ElMessage.success(`类型已${action}`)
-      type.status = nextStatus  
-      await loadAll()
-    } else {
-      ElMessage.error(res.data.message || `类型${action}失败`)
-      type.status = originalStatus 
+        const res = await updateWebsiteTypeStatus(type.type_id, nextStatus)
+        if (res.data.code === 200) {
+            ElMessage.success(`类型已${action}`)
+            type.status = nextStatus
+            await loadAll()
+        } else {
+            ElMessage.error(res.data.message || `类型${action}失败`)
+            type.status = originalStatus
+        }
+    } catch (e) {
+        type.status = originalStatus
     }
-  } catch (e) {
-    type.status = originalStatus 
-  }
 }
 
 
@@ -274,7 +270,7 @@ const submitType = async () => {
 
 <style scoped>
 .website-control-container {
-    padding: -1px 15px 15px;
+    padding: 0 15px;
 }
 
 .card-spacing {
@@ -284,7 +280,7 @@ const submitType = async () => {
 }
 
 .el-collapse-item__header.is-active {
-  color: inherit !important;   
-  font-weight: normal;        
+    color: inherit !important;
+    font-weight: normal;
 }
 </style>
