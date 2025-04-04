@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from routers import login
 from routers.control import website_control, process_control
 
 app = FastAPI(
@@ -19,3 +20,4 @@ app.add_middleware(
 
 app.include_router(website_control.router, prefix="/website_control", tags=["网站访问控制"])
 app.include_router(process_control.router,prefix="/process", tags=["进程运行控制"])
+app.include_router(login.router)
