@@ -28,7 +28,7 @@
         <el-table-column prop="description" label="说明" />
         <el-table-column label="启用状态" width="140">
           <template #default="scope">
-            <el-switch v-model="scope.row.status" :active-value="1" :inactive-value="0"
+            <el-switch :model-value="scope.row.status" :active-value="1" :inactive-value="0"
               @change="val => confirmToggleStatus(scope.row.admin_id, val)" />
           </template>
         </el-table-column>
