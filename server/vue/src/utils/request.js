@@ -9,24 +9,26 @@ const service = axios.create({
 })
 
 // 请求前加 token
-service.interceptors.request.use((config)=>{
-  const token = useUserStore()
-  if(store.token) {
+service.interceptors.request.use((config) => {
+  const store = useUserStore()
+  if (store.token) {
     config.headers.Authorization = `Bearer ${store.token}`
   }
   return config
+}, error => {
+  return Promise.reject(error)
 })
 
 // 响应拦截：处理 token 失效
 service.interceptors.response.use(
-  res => res,
+  response => response,
   err => {
     if(err.response?.status === 401) {
       const store = useUserStore()
       store.logout()
       router.push('/login')
     }
-    return PromiseRejectionEvent.reject(err)
+    return Promise.reject(err)
   }
 )
 export default service

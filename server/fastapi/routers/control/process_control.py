@@ -7,30 +7,30 @@ router = APIRouter()
 
 # 添加单个
 @router.post("/add_single")
-async def add_single(req: AddSingleProcessRequest, current_user: dict=Depends(get_current_user)):
+async def add_single(req: AddSingleProcessRequest):
     return add_single_process(req.process_name, status=req.status)
 
 # 批量添加
 @router.post("/add_batch")
-async def add_batch(req: AddProcessRequest, current_user: dict=Depends(get_current_user)):
+async def add_batch(req: AddProcessRequest):
     return add_batch_process(req.process_list, status=req.status)
 
 # 删除单个
 @router.post("/delete_single")
-async def delete_single(req: DeleteSingleProcessRequest, current_user: dict=Depends(get_current_user)):
+async def delete_single(req: DeleteSingleProcessRequest):
     return delete_single_process(req.id)
 
 # 批量删除
 @router.post("/delete_batch")
-async def delete_batch(req: DeleteProcessRequest, current_user: dict=Depends(get_current_user)):
+async def delete_batch(req: DeleteProcessRequest):
     return delete_batch_process(req.ids)
 
 # 启用/禁用
 @router.post("/toggle")
-async def toggle_status(req: ToggleProcessStatusRequest, current_user: dict=Depends(get_current_user)):
+async def toggle_status(req: ToggleProcessStatusRequest):
     return toggle_process_status(req.id, req.status)
 
 # 获取全部规则列表
 @router.get("/list")
-async def list_rules(current_user: dict=Depends(get_current_user)):
+async def list_rules():
     return get_process_list()

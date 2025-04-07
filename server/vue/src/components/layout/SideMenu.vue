@@ -14,12 +14,31 @@
         </el-icon>
         <span>首页概况</span>
       </el-menu-item>
-      <el-menu-item index="/management">
-        <el-icon>
-          <Monitor />
-        </el-icon>
-        <span>用户终端管理</span>
-      </el-menu-item>
+
+      <el-sub-menu index="/management">
+        <template #title>
+          <el-icon><Monitor /></el-icon>
+          <span>用户终端管理</span>
+        </template>
+        <el-menu-item-group>
+          <el-menu-item index="/management/terminal">
+            <el-icon><PictureRounded /></el-icon>
+            <span>终端列表</span>
+          </el-menu-item>
+          <el-menu-item index="/management/admin">
+            <el-icon><User /></el-icon>
+            <span>用户列表</span>
+          </el-menu-item>
+          <el-menu-item index="/management/role">
+            <el-icon><User /></el-icon>
+            <span>角色列表</span>
+          </el-menu-item>
+          <el-menu-item index="/policy/group">
+            <el-icon><Timer /></el-icon>
+            <span>组织架构</span>
+          </el-menu-item>
+        </el-menu-item-group>
+      </el-sub-menu>
 
       <el-sub-menu index="/policy">
         <template #title>
