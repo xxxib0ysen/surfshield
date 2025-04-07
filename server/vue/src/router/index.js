@@ -4,6 +4,7 @@ import Home from '@/views/Home.vue'
 import WebsiteControl from '@/views/control/WebsiteControl.vue'
 import ProcessControl from '@/views/control/ProcessControl.vue'
 import Login from '@/views/Login.vue'
+import Admin from '@/views/terminal_admin/Admin.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -33,6 +34,12 @@ const router = createRouter({
           path: '/policy/process',
           name: ProcessControl,
           component: ProcessControl,
+          meta: { requiresAuth: true }
+        },
+        {
+          path: '/management/admin',
+          name: Admin,
+          component: Admin,
           meta: { requiresAuth: true }
         },
       ]
