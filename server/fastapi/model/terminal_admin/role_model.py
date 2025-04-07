@@ -2,23 +2,6 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
-# 角色分页查询 - 请求
-class RoleQuery(BaseModel):
-    page: int
-    page_size: int
-
-# 角色分页查询 - 响应
-class RoleInfo(BaseModel):
-    role_id: int
-    role_name: str
-    status: int
-    description: Optional[str] = None
-    createdon: Optional[datetime] = None
-
-class RoleListResponse(BaseModel):
-    total: int
-    items: List[RoleInfo]
-
 # 新增角色
 class RoleCreate(BaseModel):
     role_name: str

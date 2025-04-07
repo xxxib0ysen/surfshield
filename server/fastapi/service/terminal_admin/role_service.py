@@ -3,37 +3,40 @@ from utils.connect import create_connection
 from utils.response import error_response, success_response
 from utils.status_code import HTTP_CONFLICT, HTTP_NOT_FOUND
 
-# 查询角色分页列表
-def get_role_list(page: int, size: int):
-    offset = (page - 1) * size
-    conn = create_connection()
-    try:
-        with conn.cursor() as cursor:
-            count_sql = "select count(*) as total from sys_role"
-            cursor.execute(count_sql)
-            total = cursor.fetchone()["total"]
-
-            list_sql = """
-                select role_id, role_name, status, description, createdon 
-                from sys_role
-                order by createdon desc limit %s offset %s
-            """
-            cursor.execute(list_sql, [size, offset])
-
-            data = cursor.fetchall()
-            return success_response(data={"total": total, "data": data})
-    finally:
-        conn.close()
-
 # 获取所有角色
 def get_all_roles():
     conn = create_connection()
     try:
         with conn.cursor() as cursor:
-            sql = "select role_id, role_name from sys_role where status = 1 order by createdon desc"
+            sql = """
+                            select role_id, role_name, status, description, createdon 
+                            from sys_role
+                            order by createdon desc
+                        """
             cursor.execute(sql)
             data = cursor.fetchall()
             return success_response(data=data)
+    finally:
+        conn.close()
+
+# 获取角色详情
+def get_role_detail(role_id: int):
+    conn = create_connection()
+    try:
+        with conn.cursor() as cursor:
+            sql = """
+                select role_id, role_name, status, description, createdon 
+                from sys_role where role_id = %s
+            """
+            cursor.execute(sql, (role_id,))
+            row = cursor.fetchone()
+            if not row:
+                return error_response("角色不存在", code=HTTP_NOT_FOUND)
+
+            # TODO: 权限绑定
+            row["permissions"] = []  # 暂为空列表
+
+            return success_response(data=row)
     finally:
         conn.close()
 

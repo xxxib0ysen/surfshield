@@ -4,16 +4,15 @@ from service.terminal_admin import role_service
 
 router = APIRouter()
 
-# 查询角色分页列表
-@router.get("/list")
-def get_role_list(page: int = 1, size: int = 6):
-    return role_service.get_role_list(page, size)
-
 # 获取所有角色列表
-@router.get("/all")
+@router.get("/list")
 def get_all_roles():
     return role_service.get_all_roles()
 
+# 单个角色详情
+@router.get("/detail")
+def get_role_detail(role_id: int):
+    return role_service.get_role_detail(role_id)
 
 # 新增角色
 @router.post("/add")
@@ -21,6 +20,7 @@ def add_role(data: RoleCreate):
     return role_service.add_role(
         role_name=data.role_name,
         description=data.description,
+        status=data.status,
         permissions=data.permissions
     )
 

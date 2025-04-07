@@ -31,7 +31,7 @@
           </el-menu-item>
           <el-menu-item index="/management/role">
             <el-icon><User /></el-icon>
-            <span>角色列表</span>
+            <span>角色权限列表</span>
           </el-menu-item>
           <el-menu-item index="/policy/group">
             <el-icon><Timer /></el-icon>
