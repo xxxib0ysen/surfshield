@@ -20,17 +20,20 @@ const router = createRouter({
         {
           path: '/home',
           name: 'Home',
-          component: Home
+          component: Home,
+          meta: { requiresAuth: true }
         },
         {
           path: '/policy/website',
           name: WebsiteControl,
-          component: WebsiteControl
+          component: WebsiteControl,
+          meta: { requiresAuth: true }
         },
         {
           path: '/policy/process',
           name: ProcessControl,
-          component: ProcessControl
+          component: ProcessControl,
+          meta: { requiresAuth: true }
         },
       ]
     },
@@ -38,4 +41,18 @@ const router = createRouter({
   ]
 })
 
+router.beforeEach((to, from , next)=>{
+  const token = localStorage.getItem('token')
+  if(to.path==='/login') {
+    if(token) {
+      next('/home')
+    } else {
+      next()
+    }
+  } else if (to.meta.requiresAuth && !token) {
+    next('login')
+  } else {
+    next()
+  }
+})
 export default router

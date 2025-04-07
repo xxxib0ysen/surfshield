@@ -1,4 +1,6 @@
 import axios from 'axios'
+import router from '@/router'
+import { useUserStore } from '@/stores/useUserStore'
 
 // 创建 axios 实例
 const service = axios.create({
@@ -6,12 +8,25 @@ const service = axios.create({
   timeout: 5000
 })
 
+// 请求前加 token
 service.interceptors.request.use((config)=>{
-  const token = localStorage.getItem('token')
-  if(token) {
-    config.headers.Authorization = `Bearer ${token}`
+  const token = useUserStore()
+  if(store.token) {
+    config.headers.Authorization = `Bearer ${store.token}`
   }
   return config
 })
 
+// 响应拦截：处理 token 失效
+service.interceptors.response.use(
+  res => res,
+  err => {
+    if(err.response?.status === 401) {
+      const store = useUserStore()
+      store.logout()
+      router.push('/login')
+    }
+    return PromiseRejectionEvent.reject(err)
+  }
+)
 export default service

@@ -10,15 +10,39 @@
                     <el-input v-model="form.username" placeholder="请输入用户名" prefix-icon="User" />
                 </el-form-item>
                 <el-form-item prop="password">
-                    <el-input v-model="form.password" placeholder="请输入密码" type="password" show-password
+                    <el-input 
+                        v-model="form.password" 
+                        placeholder="请输入密码" 
+                        type="password" 
+                        @keyup.enter="onLogin"
+                        show-password
                         prefix-icon="Lock" />
                 </el-form-item>
                 <div class="login-options">
                     <el-checkbox v-model="form.remember">记住密码</el-checkbox>
-                    <el-link type="primary" :underline="false">忘记密码？</el-link>
+                    <el-link 
+                        type="primary" 
+                        :underline="false"
+                        @click="forgetVisible = true"
+                        >忘记密码？</el-link>
                 </div>
-                <el-button type="primary" class="login-btn" @click="onLogin" round>登录</el-button>
+                <el-button type="primary" class="login-btn" @click="onLogin" round :loading="loading" >登录</el-button>
             </el-form>
+
+            <!-- 忘记密码 -->
+            <el-dialog v-model="forgetVisible" title="忘记密码说明" width="400px" center>
+                <div style="line-height: 1.8; font-size: 14px">
+                    <p><strong>初始化账号：</strong>admin</p>
+                    <p><strong>初始化密码：</strong>surfshield</p>
+                    <p>
+                    如果需要重置密码，请联系超级管理员在用户管理页面重置密码。
+                    </p>
+                </div>
+                <template #footer>
+                    <el-button type="primary" @click="forgetVisible = false">知道了</el-button>
+                </template>
+            </el-dialog>
+
         </div>
     </div>
 </template>
@@ -28,8 +52,12 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { login, getCurrentUser } from '@/api/login'
+import { useUserStore } from '@/stores/useUserStore'
 
+const userStore = useUserStore()
 const router = useRouter()
+const loading = ref(false)
+const forgetVisible = ref(false)
 
 const form = ref({
     username: '',
@@ -39,24 +67,28 @@ const form = ref({
 
 const onLogin = async () => {
     try {
+        loading.value = true
         const res = await login(form.value.username, form.value.password)
         const token = res.data.access_token
-        localStorage.setItem('token', token)
+        userStore.setToken(token)
 
         const userRes = await getCurrentUser()
-        localStorage.setItem('user', JSON.stringify(userRes.data))
+        userStore.setUser(userRes.data)
 
         ElMessage.success('登录成功')
         router.push('/home')
     } catch (err) {
         ElMessage.error(err.response?.data?.detail || '登录失败')
+        form.value.password = ''
+    } finally {
+        loading.value = false
     }
 }
 </script>
 
 <style scoped>
 .login-bg {
-    width: 100%;
+    width: 100vw;
     height: 100vh;
     background: linear-gradient(to right, #e3f2fd, #e8f5e9);
     display: flex;

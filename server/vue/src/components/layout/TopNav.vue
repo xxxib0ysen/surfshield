@@ -5,7 +5,7 @@
           <el-dropdown @command="handleCommand">
               <span class="el-dropdown-link" tabindex="0">
                   <el-icon><User /></el-icon> 
-                  <span>User</span>    <!--放当前用户，暂定-->
+                  <span>{{ userStore.user?.admin_name || '用户' }}</span>
               </span>
               <template #dropdown>
                   <el-dropdown-menu>
@@ -21,8 +21,11 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { useUserStore } from '@/stores/useUserStore'
 
 const router = useRouter()
+const userStore = useUserStore()
+
 const onBack = () => {
     router.back()
 }
@@ -35,11 +38,14 @@ const handleCommand = async(command) => {
         const confirm = await ElMessageBox.confirm('确定退出登录？', '提示', {
             type: 'warning',
         }).catch(() => false)
-    }
-    if(confirm) {
+
+        if(confirm) {
+        userStore.logout()
         ElMessage.success('已退出登录')
-        // TODO: 清除状态，且跳转到login
+        router.push('/login')
     }
+    }
+
 }
 </script>
 
