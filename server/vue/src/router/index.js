@@ -5,6 +5,7 @@ import WebsiteControl from '@/views/control/WebsiteControl.vue'
 import ProcessControl from '@/views/control/ProcessControl.vue'
 import Login from '@/views/Login.vue'
 import Admin from '@/views/terminal_admin/Admin.vue'
+import Role from '@/views/terminal_admin/Role.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -42,6 +43,13 @@ const router = createRouter({
           component: Admin,
           meta: { requiresAuth: true }
         },
+        {
+          path: '/management/role',
+          name: Role,
+          component: Role,
+          meta: { requiresAuth: true }
+        },
+        
       ]
     },
     
