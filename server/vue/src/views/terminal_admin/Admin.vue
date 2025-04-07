@@ -49,17 +49,17 @@
 
     <!-- 弹窗 -->
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑管理员' : '新增管理员'" width="500px">
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="100px">
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
         <el-form-item label="用户名" prop="admin_name" v-if="!isEdit">
-          <el-input v-model="form.admin_name" placeholder="请输入用户名" />
+          <el-input v-model="form.admin_name" placeholder="请输入用户名" style="width: 80%;"/>
         </el-form-item>
         <el-form-item label="角色" prop="role_id">
-          <el-select v-model="form.role_id" placeholder="请选择角色" disabled>
+          <el-select v-model="form.role_id" placeholder="请选择角色" style="width: 80%;" disabled >
             <el-option label="待定" :value="1" />
           </el-select>
         </el-form-item>
         <el-form-item label="说明">
-          <el-input type="textarea" v-model="form.description" placeholder="请输入说明" />
+          <el-input type="textarea" v-model="form.description" placeholder="请输入说明" :rows="5" style="width: 80%;" />
         </el-form-item>
       </el-form>
 
