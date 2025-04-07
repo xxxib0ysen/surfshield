@@ -20,7 +20,9 @@
         <el-table-column prop="admin_name" label="用户名" />
         <el-table-column label="角色">
           <template #default="scope">
-            <el-tag size="small" type="info">待定</el-tag>
+            <el-tag size="small" type="info">
+              {{ getRoleName(scope.row.role_id) || '未知' }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="description" label="说明" />
@@ -42,8 +44,7 @@
       <!-- 分页 -->
       <div class="pagination-container">
         <el-pagination background layout="total, prev, pager, next, jumper" :total="total" :page-size="6"
-          :current-page="query.page" @current-change="handlePageChange" 
-        />
+          :current-page="query.page" @current-change="handlePageChange" />
       </div>
     </el-main>
 
@@ -51,11 +52,11 @@
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑管理员' : '新增管理员'" width="500px">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
         <el-form-item label="用户名" prop="admin_name" v-if="!isEdit">
-          <el-input v-model="form.admin_name" placeholder="请输入用户名" style="width: 80%;"/>
+          <el-input v-model="form.admin_name" placeholder="请输入用户名" style="width: 80%;" />
         </el-form-item>
         <el-form-item label="角色" prop="role_id">
-          <el-select v-model="form.role_id" placeholder="请选择角色" style="width: 80%;" disabled >
-            <el-option label="待定" :value="1" />
+          <el-select v-model="form.role_id" placeholder="请选择角色" style="width: 80%;">
+            <el-option v-for="item in roleList" :key="item.role_id" :label="item.role_name" :value="item.role_id" />
           </el-select>
         </el-form-item>
         <el-form-item label="说明">
@@ -78,6 +79,7 @@ import {
   getAdminList, addAdmin, updateAdmin,
   resetPassword, deleteAdmin, updateStatus
 } from '@/api/terminal_admin/admin'
+import { getAllRoles } from '@/api/terminal_admin/role'
 
 const tableData = ref([])
 const total = ref(0)
@@ -95,8 +97,11 @@ const form = ref({
   status: 0
 })
 
+const roleList = ref([])
+
 const rules = {
   admin_name: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  role_id: [{ required: true, message: '请选择角色', trigger: 'change' }]
 }
 
 // 获取管理员列表
@@ -124,6 +129,7 @@ const openAddDialog = () => {
   dialogVisible.value = true
   form.value = { admin_id: null, admin_name: '', role_id: '', description: '', status: 0 }
   query.value.page = 1
+  loadRoleList()
 }
 
 // 编辑管理员
@@ -131,6 +137,7 @@ const openEditDialog = (row) => {
   isEdit.value = true
   dialogVisible.value = true
   form.value = { ...row }
+  loadRoleList()
 }
 
 // 保存
@@ -216,7 +223,28 @@ const handlePageChange = (val) => {
   loadData()
 }
 
+// 获取角色下拉列表
+const loadRoleList = async () => {
+  try {
+    const res = await getAllRoles()
+    if (res.data.code === 200) {
+      roleList.value = res.data.data
+    }
+  } catch (err) {
+    console.error('角色列表加载失败', err)
+  }
+}
+
+// 显示角色名
+const getRoleName = (role_id) => {
+  if (!Array.isArray(roleList.value)) return ''
+  const role = roleList.value.find(r => r.role_id === role_id)
+  return role ? role.role_name : ''
+}
+
+
 onMounted(() => {
+  loadRoleList()
   loadData()
 })
 </script>
@@ -233,7 +261,7 @@ onMounted(() => {
 
 .pagination-container {
   display: flex;
-  justify-content: flex-end;  
+  justify-content: flex-end;
   padding: 10px 20px;
   margin-top: 20px;
 }
