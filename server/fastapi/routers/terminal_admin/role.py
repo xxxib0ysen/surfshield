@@ -9,6 +9,12 @@ router = APIRouter()
 def get_role_list(page: int = 1, size: int = 6):
     return role_service.get_role_list(page, size)
 
+# 获取所有角色列表
+@router.get("/all")
+def get_all_roles():
+    return role_service.get_all_roles()
+
+
 # 新增角色
 @router.post("/add")
 def add_role(data: RoleCreate):

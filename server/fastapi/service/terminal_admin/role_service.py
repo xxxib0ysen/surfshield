@@ -25,6 +25,18 @@ def get_role_list(page: int, size: int):
     finally:
         conn.close()
 
+# 获取所有角色
+def get_all_roles():
+    conn = create_connection()
+    try:
+        with conn.cursor() as cursor:
+            sql = "select role_id, role_name from sys_role where status = 1 order by createdon desc"
+            cursor.execute(sql)
+            data = cursor.fetchall()
+            return success_response(data=data)
+    finally:
+        conn.close()
+
 # 新增角色
 def add_role(role_name: str, description: str, permissions: list, status: int):
     conn = create_connection()
@@ -104,3 +116,5 @@ def delete_role(role_id: int):
         return success_response(message="角色删除成功")
     finally:
         conn.close()
+
+
