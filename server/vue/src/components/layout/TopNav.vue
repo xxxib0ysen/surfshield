@@ -32,8 +32,7 @@ const onBack = () => {
 
 const handleCommand = async(command) => {
     if(command === 'changePassword') {
-        ElMessage.info("跳转到“修改密码”页面")
-        // TODO: 跳转
+        router.push('/change-password')
     } else if(command === 'logout') {
         const confirm = await ElMessageBox.confirm('确定退出登录？', '提示', {
             type: 'warning',

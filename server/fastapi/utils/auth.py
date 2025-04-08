@@ -39,7 +39,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         # 查询用户信息
         conn = create_connection()
         cursor = conn.cursor()
-        sql = "select admin_id, admin_name, role_id, status from sys_admin where admin_name = %s"
+        sql = "select admin_id, admin_name, role_id, status , is_default_pwd from sys_admin where admin_name = %s"
         cursor.execute(sql, (username,))
         user = cursor.fetchone()
         cursor.close()

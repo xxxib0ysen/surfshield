@@ -2,8 +2,9 @@ import re
 from datetime import datetime
 from utils.connect import create_connection
 from utils.response import error_response, success_response
-from utils.security import hash_password
-from utils.status_code import HTTP_CONFLICT, HTTP_BAD_REQUEST, HTTP_NOT_FOUND, HTTP_UNAUTHORIZED
+from utils.security import hash_password, verify_password
+from utils.status_code import HTTP_CONFLICT, HTTP_BAD_REQUEST, HTTP_NOT_FOUND, HTTP_UNAUTHORIZED, \
+    HTTP_INTERNAL_SERVER_ERROR
 
 default_pwd = "surfshield"
 
@@ -42,12 +43,12 @@ def add_admin(admin_name: str, role_id: int, description: str, status: int ):
             if not cursor.fetchone():
                 return error_response("角色不存在", code=HTTP_BAD_REQUEST)
             sql = """
-                insert into sys_admin (admin_name, password, role_id, description, status, createdon)
-                values (%s, %s, %s, %s, %s, %s)
+                insert into sys_admin (admin_name, password, role_id, description, status, createdon, is_default_pwd)
+                values (%s, %s, %s, %s, %s, %s, %s)
             """
             password = hash_password(default_pwd)
             createdon = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            cursor.execute(sql, (admin_name, password, role_id, description, status, createdon))
+            cursor.execute(sql, (admin_name, password, role_id, description, status, createdon, True))
         conn.commit()
         return success_response(message="管理员添加成功")
     finally:
@@ -103,12 +104,12 @@ def change_password(admin_id: int, old_password: str, new_password: str):
             if not row:
                 return error_response("管理员不存在", code=HTTP_NOT_FOUND)
 
-            hashed_old = hash_password(old_password)
-            if row["password"] != hashed_old:
+            if not verify_password(old_password, row["password"]):
                 return error_response("旧密码不正确", code=HTTP_UNAUTHORIZED)
 
             new_hashed = hash_password(new_password)
-            cursor.execute("update sys_admin set password = %s where admin_id = %s", (new_hashed, admin_id))
+            cursor.execute("update sys_admin set password = %s, is_default_pwd = false where admin_id = %s",
+                           (new_hashed, admin_id))
         conn.commit()
         return success_response(message="密码修改成功")
     finally:
@@ -124,10 +125,13 @@ def reset_admin_password(admin_id: int):
                 return error_response("管理员不存在", code=HTTP_NOT_FOUND)
 
             new_password = hash_password(default_pwd)
-            sql = "update sys_admin set password = %s where admin_id = %s"
+            sql = "update sys_admin set password = %s , is_default_pwd = true where admin_id = %s"
             cursor.execute(sql, (new_password, admin_id))
+
         conn.commit()
         return success_response(message="密码重置成功")
+    except Exception as e:
+        return error_response(f"密码重置失败：{str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)
     finally:
         conn.close()
 

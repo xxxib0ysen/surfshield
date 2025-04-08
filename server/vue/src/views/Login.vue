@@ -98,8 +98,14 @@ const onLogin = async () => {
       localStorage.removeItem('rememberUser')
     }
 
-    ElMessage.success('登录成功')
-    router.push('/home')
+    // 如果是默认密码，跳转密码修改页
+    if (form.value.password === 'surfshield' && userRes.data.damin_name !== 'admin') {
+      ElMessage.warning('默认密码，请修改密码')
+      router.push('/change-password')
+    } else {
+      ElMessage.success('登录成功')
+      router.push('/home')
+    }
   } catch (err) {
     ElMessage.error(err.response?.data?.detail || '登录失败')
     form.value.password = ''

@@ -69,6 +69,6 @@ def read_current_user(current_user: dict = Depends(get_current_user)):
         "admin_name": current_user["admin_name"],
         "role_id": current_user["role_id"],
         "status": current_user["status"],
-        "permissions": current_user["permissions"]
-
+        "permissions": current_user["permissions"],
+        "is_default_pwd": current_user["is_default_pwd"]
     }
