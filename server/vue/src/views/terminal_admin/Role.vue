@@ -17,7 +17,7 @@
 
             <el-row :gutter="20">
                 <!-- 角色列表 -->
-                <el-col :span="4" class="sidebar-wrapper">
+                <el-col :span="3" class="sidebar-wrapper">
                     <el-scrollbar height="500px">
                         <el-menu class="sidebar-menu" :default-active="String(currentRoleId)" @select="handleSelectRole"
                             text-color="#333">
@@ -29,7 +29,7 @@
                 </el-col>
 
                 <!-- 角色详情 -->
-                <el-col :span="20">
+                <el-col :span="21">
                     <el-card shadow="never" class="detail-card" v-if="currentRole">
                         <el-table :data="[currentRole]" border style="width: 100%">
                             <el-table-column label="角色名称" width="180px">
@@ -59,13 +59,30 @@
                             </el-table-column>
                         </el-table>
 
+                        <!-- 权限绑定面板 -->
                         <div style="margin-top: 25px;">
                             <div style="font-weight: bold; margin-bottom: 10px;">权限绑定</div>
-                            <el-checkbox-group v-model="currentRole.permissions">
-                                <el-checkbox v-for="perm in permissionList" :key="perm.id" :label="perm.id">
-                                    {{ perm.name }}
+                            <el-collapse>
+                            <el-collapse-item v-for="(items, module) in groupedPermissions" :key="module" :title="module">
+                                <el-checkbox
+                                :indeterminate="isIndeterminate(module)"
+                                :checked="isAllSelected(module)"
+                                @change="val => toggleSelectAll(module, val)"
+                                style="margin-bottom: 10px;"
+                                >
+                                全选
                                 </el-checkbox>
-                            </el-checkbox-group>
+                                <el-row :gutter="20">
+                                <el-col :span="12" v-for="(chunk, idx) in chunked(items, 2)" :key="idx">
+                                    <el-checkbox-group v-model="currentRole.permissions">
+                                    <el-checkbox v-for="perm in chunk" :key="perm.id" :label="perm.id">
+                                        {{ perm.name }}
+                                    </el-checkbox>
+                                    </el-checkbox-group>
+                                </el-col>
+                                </el-row>
+                            </el-collapse-item>
+                            </el-collapse>
                         </div>
 
                         <div class="footer-btns">
@@ -101,11 +118,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
     getAllRoles, getRoleDetail, updateRole, deleteRole, addRole,updateRoleStatus
 } from '@/api/terminal_admin/role'
+import { getPermissionsByRole, bindPermissions, getGroupedPermissions } from '@/api/terminal_admin/perm'
 
 const roleList = ref([])
 const currentRole = ref(null)
 const currentRoleId = ref(null)
-const permissionList = ref([])
+const groupedPermissions = ref({})
 
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -142,8 +160,49 @@ const loadData = async () => {
 
 // 加载权限列表
 const loadPermissions = async () => {
+  try {
+    const res = await getGroupedPermissions()
+    if (res.data.code === 200) {
+      groupedPermissions.value = res.data.data
+    } else {
+      ElMessage.error(res.data.message || '获取权限失败')
+    }
+  } catch (err) {
+    console.error('加载权限失败', err)
+    ElMessage.error('加载权限失败')
+  }
 }
 
+// 两列权限展示
+ const chunked = (arr,cols)=>{
+    const mid = Math.ceil(arr.length / cols)
+    return [arr.slice(0, mid),arr.slice(mid)]
+ }
+
+//  判断当前模块是否已全选
+ const isAllSelected = (module) => {
+  const perms = groupedPermissions.value[module]?.map(p => p.id) || []
+  return perms.every(p => currentRole.value.permissions.includes(p))
+}
+
+// 判断当前模块是否为半选状态
+const isIndeterminate = (module) => {
+  const perms = groupedPermissions.value[module]?.map(p => p.id) || []
+  const selected = perms.filter(p => currentRole.value.permissions.includes(p))
+  return selected.length > 0 && selected.length < perms.length
+}
+
+// 全选
+const toggleSelectAll = (module, val) => {
+  const perms = groupedPermissions.value[module]?.map(p => p.id) || []
+  if (val) {
+    // 合并当前模块权限到已选权限中
+    currentRole.value.permissions = Array.from(new Set([...currentRole.value.permissions, ...perms]))
+  } else {
+    // 从已选权限中移除当前模块的所有权限
+    currentRole.value.permissions = currentRole.value.permissions.filter(id => !perms.includes(id))
+  }
+}
 
 // 选择角色并加载详情
 const handleSelectRole = async (roleId) => {
@@ -153,6 +212,7 @@ const handleSelectRole = async (roleId) => {
         if (res.data.code === 200) {
             currentRole.value = res.data.data
             originalRole.value = JSON.parse(JSON.stringify(res.data.data)) //拷贝
+            currentRole.value.permissions ||= [] 
         }
     } catch (err) {
         console.error('加载角色详情失败', err)
@@ -177,8 +237,18 @@ const confirmSave = async () => {
         saving = true
         const res = await updateRole(currentRole.value)
         if (res.data.code === 200) {
-            ElMessage.success('保存成功')
-            refreshPage()
+            // 保存权限绑定
+            const bindRes = await bindPermissions({
+                role_id: currentRole.value.role_id,
+                perm_ids: currentRole.value.permissions
+            })
+            if (bindRes.data.code === 200) {
+                ElMessage.success('保存成功')
+                refreshPage()
+            } else {
+                ElMessage.error(bindRes.data.message || '权限保存失败')
+            }
+            
         } else {
             ElMessage.error(res.data.message || '保存失败')
         }
@@ -250,6 +320,12 @@ const cancelEdit = () => {
 const openAddDialog = () => {
     dialogVisible.value = true
     addForm.value = { role_name: '', description: '', permissions: [], status: 0 }
+    currentRole.value = {
+    role_name: '',
+    description: '',
+    permissions: [],
+    status: 0
+  }
 }
 
 // 新增角色
@@ -294,17 +370,15 @@ onMounted(() => {
 }
 
 .detail-card {
-    min-height: 500px;
-    padding-bottom: 80px;
-    position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
 }
 
 .footer-btns {
-    position: absolute;
-    bottom: 40px;
-    left: 0;
-    right: 0;
-    text-align: center;
+  display: flex;
+  justify-content: center;
+  margin-top: 30px;
 }
 
 .role-menu {
@@ -320,7 +394,6 @@ onMounted(() => {
 
 .sidebar-menu {
     border: none;
-    background-color: #f5f7fa;
     width: 100%;
 }
 

@@ -1,4 +1,6 @@
 from datetime import datetime
+
+from service.terminal_admin.perm_service import get_permission_ids_by_role, update_role_permissions
 from utils.connect import create_connection
 from utils.response import error_response, success_response
 from utils.status_code import HTTP_CONFLICT, HTTP_NOT_FOUND
@@ -33,10 +35,11 @@ def get_role_detail(role_id: int):
             if not row:
                 return error_response("角色不存在", code=HTTP_NOT_FOUND)
 
-            # TODO: 权限绑定
-            row["permissions"] = []  # 暂为空列表
+            # 查询权限列表
+            perm_res = get_permission_ids_by_role(role_id)
+            row["permissions"] = perm_res["data"] if perm_res["code"] == 200 else []
 
-            return success_response(data=row)
+        return success_response(data=row)
     finally:
         conn.close()
 
@@ -56,9 +59,6 @@ def add_role(role_name: str, description: str, permissions: list, status: int):
             createdon = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             cursor.execute(sql, (role_name, status, description, createdon))
 
-            role_id = cursor.lastrowid
-            # TODO: 权限绑定
-
         conn.commit()
         return success_response(message="角色添加成功")
     finally:
@@ -76,7 +76,11 @@ def update_role(role_id: int, role_name: str, description: str, permissions: lis
             sql = "update sys_role set role_name = %s, description = %s where role_id = %s"
             cursor.execute(sql, (role_name, description, role_id))
 
-            # TODO: 更新权限绑定
+            # 权限绑定
+            update_res = update_role_permissions(role_id, permissions)
+            if update_res["code"] != 200:
+                conn.rollback()
+                return update_res
 
         conn.commit()
         return success_response(message="角色信息更新成功")
@@ -113,8 +117,9 @@ def delete_role(role_id: int):
             if not cursor.fetchone():
                 return error_response("角色不存在", code=HTTP_NOT_FOUND)
 
-            sql = "delete from sys_role where role_id = %s"
-            cursor.execute(sql, (role_id,))
+            cursor.execute("delete from sys_role where role_id = %s", (role_id,))
+            # 删除权限绑定
+            cursor.execute("delete from sys_role_permission where role_id = %s", (role_id,))
         conn.commit()
         return success_response(message="角色删除成功")
     finally:
