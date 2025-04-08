@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/useUserStore'
+import { ElMessage } from 'element-plus'
 import Layout from '@/components/layout/Layout.vue'
 import Home from '@/views/Home.vue'
 import WebsiteControl from '@/views/control/WebsiteControl.vue'
@@ -6,6 +8,7 @@ import ProcessControl from '@/views/control/ProcessControl.vue'
 import Login from '@/views/Login.vue'
 import Admin from '@/views/terminal_admin/Admin.vue'
 import Role from '@/views/terminal_admin/Role.vue'
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -15,9 +18,9 @@ const router = createRouter({
       component: Login
     },
     {
-      path:'/',
+      path: '/',
       redirect: '/login',
-      component: Layout, 
+      component: Layout,
       children: [
         {
           path: '/home',
@@ -41,33 +44,62 @@ const router = createRouter({
           path: '/management/admin',
           name: Admin,
           component: Admin,
-          meta: { requiresAuth: true }
+          meta: {
+            requiresAuth: true,
+            perm: 'admin:list'
+          }
         },
         {
           path: '/management/role',
           name: Role,
           component: Role,
-          meta: { requiresAuth: true }
+          meta: {
+            requiresAuth: true,
+            perm: 'role:list'
+          }
         },
-        
+        {
+          path: '/403',
+          component: () => import('@/views/403.vue'),
+          meta: { title: '无权限' }
+        },
+
       ]
     },
-    
+
+
   ]
 })
 
-router.beforeEach((to, from , next)=>{
-  const token = localStorage.getItem('token')
-  if(to.path==='/login') {
-    if(token) {
+router.beforeEach((to, from, next) => {
+  const userStore = useUserStore()
+  userStore.init() 
+  const token = userStore.userInfo?.token
+  const userPerms = userStore.userInfo?.permissions || []
+
+  // 登录页逻辑
+  if (to.path === '/login') {
+    if (token) {
       next('/home')
     } else {
       next()
     }
-  } else if (to.meta.requiresAuth && !token) {
-    next('login')
-  } else {
-    next()
+    return
   }
+
+  // 未登录，跳转到登录页
+  if (to.meta.requiresAuth && !token) {
+    next('/login')
+    return
+  }
+
+  // 页面权限拦截
+  const requiredPerm = to.meta.perm
+  if (requiredPerm && !userPerms.includes(requiredPerm)) {
+    ElMessage.warning('您暂无访问权限，请联系管理员授权')
+    return next('/403')
+  }
+
+  next()
 })
 export default router

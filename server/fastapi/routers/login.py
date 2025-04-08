@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from utils.auth import get_current_user
+from utils.auth import get_current_user, get_permission_codes
 from utils.connect import create_connection
 from utils.security import verify_password
 from utils.jwt_token import create_access_token
@@ -21,8 +21,6 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
         sql = "select admin_id, admin_name, password, role_id, status from sys_admin where admin_name = %s"
         cursor.execute(sql, (form_data.username,))
         user = cursor.fetchone()
-        cursor.close()
-        conn.close()
 
         # 用户不存在
         if not user:
@@ -36,15 +34,29 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
         if user["status"] != 1:
             raise HTTPException(status_code=403, detail="账号未启用")
 
+        # 角色未启用
+        role_sql = "select status from sys_role where role_id = %s"
+        cursor.execute(role_sql, (user["role_id"],))
+        role = cursor.fetchone()
+
+        if not role:
+            raise HTTPException(status_code=400, detail="角色不存在")
+
+        if role["status"] != 1:
+            perms = []
+        else:
+            perms = get_permission_codes(user["role_id"])
+
         # 创建 token
         token_data = {
             "sub": user["admin_name"],
             "admin_id": user["admin_id"],
-            "role_id": user["role_id"]
+            "role_id": user["role_id"],
+            "perms": perms
         }
-        access_token = create_access_token(token_data, timedelta(minutes=30))
+        access_token = create_access_token(token_data)
 
-        return {"access_token": access_token, "token_type": "bearer"}
+        return {"access_token": access_token, "token_type": "bearer", "permissions":perms}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail="登录失败：" + str(e))
@@ -56,5 +68,7 @@ def read_current_user(current_user: dict = Depends(get_current_user)):
         "admin_id": current_user["admin_id"],
         "admin_name": current_user["admin_name"],
         "role_id": current_user["role_id"],
-        "status": current_user["status"]
+        "status": current_user["status"],
+        "permissions": current_user["permissions"]
+
     }

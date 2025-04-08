@@ -5,7 +5,7 @@
           <el-dropdown @command="handleCommand">
               <span class="el-dropdown-link" tabindex="0">
                   <el-icon><User /></el-icon> 
-                  <span>{{ userStore.user?.admin_name || '用户' }}</span>
+                  <span>{{ userStore.userInfo?.user?.admin_name || '用户' }}</span>
               </span>
               <template #dropdown>
                   <el-dropdown-menu>

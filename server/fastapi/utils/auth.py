@@ -23,8 +23,13 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         # 解码 token
         payload = jwt.decode(token, secret_key, algorithms=[algorithm])
         username = payload.get("sub")
-        if username is None:
+        admin_id = payload.get("admin_id")
+        role_id = payload.get("role_id")
+        permissions = payload.get("perms", [])
+
+        if not username or not admin_id or not role_id:
             raise credentials_exception
+
     except DecodeError:
         raise credentials_exception
     except ExpiredSignatureError:
@@ -43,7 +48,29 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         if not user:
             raise credentials_exception
 
-        return user
+        return {
+            "admin_id": user["admin_id"],
+            "admin_name": user["admin_name"],
+            "role_id": user["role_id"],
+            "status": user["status"],
+            "permissions": permissions
+        }
 
     except Exception:
         raise credentials_exception
+
+# 根据角色id获取权限码
+def get_permission_codes(role_id: int) -> list:
+    conn = create_connection()
+    cursor = conn.cursor()
+    sql = """
+        select p.perm_code
+        from sys_role_permission rp
+        join sys_permission p on rp.perm_id = p.perm_id
+        where rp.role_id = %s
+    """
+    cursor.execute(sql, (role_id,))
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [row['perm_code'] for row in rows]

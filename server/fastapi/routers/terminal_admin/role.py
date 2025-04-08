@@ -1,22 +1,23 @@
 from fastapi import APIRouter, Depends
 from model.terminal_admin.role_model import *
 from service.terminal_admin import role_service
+from utils.check_perm import check_permission
 
 router = APIRouter()
 
 # 获取所有角色列表
 @router.get("/list")
-def get_all_roles():
+def get_all_roles(_=Depends(check_permission("role:list"))):
     return role_service.get_all_roles()
 
 # 单个角色详情
 @router.get("/detail")
-def get_role_detail(role_id: int):
+def get_role_detail(role_id: int, _=Depends(check_permission("role:list"))):
     return role_service.get_role_detail(role_id)
 
 # 新增角色
 @router.post("/add")
-def add_role(data: RoleCreate):
+def add_role(data: RoleCreate, _=Depends(check_permission("role:add"))):
     return role_service.add_role(
         role_name=data.role_name,
         description=data.description,
@@ -26,7 +27,7 @@ def add_role(data: RoleCreate):
 
 # 编辑角色
 @router.post("/update")
-def update_role(data: RoleUpdate):
+def update_role(data: RoleUpdate, _=Depends(check_permission("role:edit"))):
     return role_service.update_role(
         role_id=data.role_id,
         role_name=data.role_name,
@@ -36,7 +37,7 @@ def update_role(data: RoleUpdate):
 
 # 修改角色状态
 @router.post("/status")
-def update_role_status(data: RoleStatusUpdate):
+def update_role_status(data: RoleStatusUpdate, _=Depends(check_permission("role:disable"))):
     return role_service.update_role_status(
         role_id=data.role_id,
         status=data.status
@@ -44,5 +45,5 @@ def update_role_status(data: RoleStatusUpdate):
 
 # 删除角色
 @router.post("/delete")
-def delete_role(data: RoleDelete):
+def delete_role(data: RoleDelete, _=Depends(check_permission("role:delete"))):
     return role_service.delete_role(data.role_id)
