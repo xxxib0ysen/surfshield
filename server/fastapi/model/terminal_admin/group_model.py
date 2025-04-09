@@ -12,7 +12,7 @@ class GroupTree(BaseModel):
     children: Optional[List['GroupTree']] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 # 新增/编辑分组请求模型
