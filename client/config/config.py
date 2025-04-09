@@ -3,10 +3,13 @@ import os
 server_url = "http://localhost:8000"
 
 # 获取网站访问控制规则列表
-rule_sync_endpoint = "/website_control/listGrouped"
+rule_sync_endpoint = "/client/website_control/listGrouped"
 
 # 获取进程控制规则列表
-process_sync_endpoint = "/process/list"
+process_sync_endpoint = "/client/process/list"
+
+# 终端注册接口地址
+terminal_register_endpoint = "/client/register"
 
 # 同步间隔10min
 sync_interval_minutes = 10
