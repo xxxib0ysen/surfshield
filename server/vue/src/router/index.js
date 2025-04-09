@@ -8,6 +8,7 @@ import ProcessControl from '@/views/control/ProcessControl.vue'
 import Login from '@/views/Login.vue'
 import Admin from '@/views/terminal_admin/Admin.vue'
 import Role from '@/views/terminal_admin/Role.vue'
+import Group from '@/views/terminal_admin/Group.vue'
 
 
 const router = createRouter({
@@ -56,6 +57,14 @@ const router = createRouter({
           meta: {
             requiresAuth: true,
             perm: 'role:list'
+          }
+        },
+        {
+          path: '/management/group',
+          name: Group,
+          component: Group,
+          meta: {
+            requiresAuth: true,
           }
         },
         {

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routers import login
 from routers.control import website_control, process_control
-from routers.terminal_admin import admin, role, perm
+from routers.terminal_admin import admin, role, perm, group
 from utils.auth import get_current_user
 
 app = FastAPI(
@@ -26,3 +26,4 @@ app.include_router(login.router)
 app.include_router(admin.router,prefix="/admin", tags=["管理员管理"],dependencies=[Depends(get_current_user)])
 app.include_router(role.router,prefix="/role", tags=["角色管理"],dependencies=[Depends(get_current_user)])
 app.include_router(perm.router,prefix="/permission", tags=["权限管理"],dependencies=[Depends(get_current_user)])
+app.include_router(group.router,prefix="/group",tags=["分组管理"],dependencies=[Depends(get_current_user)])
