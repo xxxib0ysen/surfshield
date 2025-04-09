@@ -9,6 +9,7 @@ import Login from '@/views/Login.vue'
 import Admin from '@/views/terminal_admin/Admin.vue'
 import Role from '@/views/terminal_admin/Role.vue'
 import Group from '@/views/terminal_admin/Group.vue'
+import Terminal from '@/views/terminal_admin/Terminal.vue'
 
 
 const router = createRouter({
@@ -40,6 +41,14 @@ const router = createRouter({
           name: ProcessControl,
           component: ProcessControl,
           meta: { requiresAuth: true }
+        },
+        {
+          path: '/management/terminal',
+          name: Terminal,
+          component: Terminal,
+          meta: {
+            requiresAuth: true,
+          }
         },
         {
           path: '/management/admin',
