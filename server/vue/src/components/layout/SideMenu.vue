@@ -33,7 +33,7 @@
             <el-icon><User /></el-icon>
             <span>角色权限列表</span>
           </el-menu-item>
-          <el-menu-item index="/policy/group">
+          <el-menu-item index="/management/group">
             <el-icon><Timer /></el-icon>
             <span>组织架构</span>
           </el-menu-item>

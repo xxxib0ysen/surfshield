@@ -53,7 +53,8 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
             "admin_name": user["admin_name"],
             "role_id": user["role_id"],
             "status": user["status"],
-            "permissions": permissions
+            "permissions": permissions,
+            "is_default_pwd": user["is_default_pwd"]
         }
 
     except Exception:

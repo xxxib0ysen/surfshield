@@ -99,7 +99,7 @@ const onLogin = async () => {
     }
 
     // 如果是默认密码，跳转密码修改页
-    if (form.value.password === 'surfshield' && userRes.data.damin_name !== 'admin') {
+    if (form.value.password === 'surfshield' && userRes.data.admin_name !== 'admin') {
       ElMessage.warning('默认密码，请修改密码')
       router.push('/change-password')
     } else {
