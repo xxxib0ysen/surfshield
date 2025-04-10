@@ -1,7 +1,6 @@
-// src/api/terminal.js
 import request from '@/utils/request'
 
-// 获取终端列表（分页 + 筛选）
+// 获取终端列表
 export function getTerminalList(params) {
   return request({
     url: '/terminal/list',
@@ -27,7 +26,7 @@ export function moveTerminalToGroup(data) {
   })
 }
 
-// 获取终端分组（组织架构）树
+// 获取终端分组
 export function getTerminalGroups() {
   return request({
     url: '/group/tree',
@@ -35,7 +34,7 @@ export function getTerminalGroups() {
   })
 }
 
-// 获取自定义列（预留接口）
+// 获取自定义列
 export function getTerminalColumns() {
   return request({
     url: '/terminal/columns',
