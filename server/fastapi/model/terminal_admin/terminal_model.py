@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
-# 分页查询请求
+# 查询请求
 class TerminalQuery(BaseModel):
     username: Optional[str] = None
     hostname: Optional[str] = None
@@ -11,10 +11,9 @@ class TerminalQuery(BaseModel):
     os_name: Optional[str] = None
     os_version: Optional[str] = None
     status: Optional[int] = None  # 1在线，0离线
-    fuzzy: Optional[bool] = False
-    group_id: Optional[int] = None
+    fuzzy: Optional[bool] = True
     page: int = 1
-    page_size: int = 10
+    page_size: int = 6
 
 # 批量移动分组请求模型
 class TerminalMoveGroup(BaseModel):
@@ -57,6 +56,7 @@ class TerminalOut(BaseModel):
     last_login: Optional[datetime] = None
     group_id: int
     group_name: str
+    group_path: str
 
     class Config:
         from_attributes = True

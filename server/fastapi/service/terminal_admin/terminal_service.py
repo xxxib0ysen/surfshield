@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional, List
 
 from utils.connect import create_connection
 from utils.response import success_response, error_response
@@ -6,7 +7,7 @@ from utils.status_code import HTTP_OK, HTTP_BAD_REQUEST
 from model.terminal_admin.terminal_model import TerminalQuery, TerminalMoveGroup
 
 # 查询终端列表
-def get_terminal_list(query: TerminalQuery):
+def get_terminal_list(query: TerminalQuery, group_ids: Optional[List[int]] = None):
     try:
         conn = create_connection()
         cursor = conn.cursor()
@@ -42,9 +43,10 @@ def get_terminal_list(query: TerminalQuery):
             filters.append("status = %s")
             values.append(query.status)
         # 筛选分组
-        if query.group_id:
-            filters.append("group_id = %s")
-            values.append(query.group_id)
+        if group_ids:
+            placeholders = ','.join(['%s'] * len(group_ids))
+            filters.append(f"group_id in ({placeholders})")
+            values.extend(group_ids)
 
         where_sql = " where " + " and ".join(filters) if filters else ""
         limit_sql = " limit %s offset %s"
@@ -124,6 +126,42 @@ def move_terminal_to_group(data: TerminalMoveGroup):
             message=f"移动失败: {str(e)}"
         )
 
+# 获取分组完整路径
+def get_group_path(conn, group_id: int) -> str:
+    cursor = conn.cursor()
+    path = []
+    while group_id:
+        cursor.execute("select group_name, parent_id from sys_group where group_id = %s", (group_id,))
+        row = cursor.fetchone()
+        if not row:
+            break
+        path.insert(0, row["group_name"])
+        group_id = row["parent_id"]
+    return "/" + "/".join(path) if path else "/默认分组"
+
+# 自定义列
+def get_terminal_columns():
+    try:
+        columns = [
+            {"prop": "username", "label": "用户名", "default": True},
+            {"prop": "status", "label": "在线状态", "default": True},
+            {"prop": "hostname", "label": "计算机名", "default": True},
+            {"prop": "os_name", "label": "操作系统", "default": True},
+            {"prop": "ip_address", "label": "IP", "default": True},
+            {"prop": "os_version", "label": "操作系统版本", "default": False},
+            {"prop": "install_time", "label": "操作系统安装时间", "default": False},
+            {"prop": "uuid", "label": "唯一标识符", "default": False},
+            {"prop": "local_ip", "label": "本地IP", "default": False},
+            {"prop": "mac_address", "label": "MAC", "default": False},
+            {"prop": "is_64bit", "label": "是否64位", "default": False},
+            {"prop": "group_path", "label": "分组路径", "default": False},
+            {"prop": "last_login", "label": "最后在线时间", "default": False},
+        ]
+        return success_response(code=HTTP_OK, message="获取成功", data=columns)
+    except Exception as e:
+        return error_response(code=HTTP_BAD_REQUEST, message=f"获取失败: {str(e)}")
+
+
 # 终端注册
 def register_terminal(data):
     try:
@@ -140,56 +178,68 @@ def register_terminal(data):
                 code=HTTP_BAD_REQUEST,
                 message="无效的邀请码，请联系管理员"
             )
-
         group_id = result["group_id"]
+
+        # 获取分组名称与路径
+        sql = "select group_name from sys_group where group_id = %s"
+        cursor.execute(sql, (group_id,))
+        group = cursor.fetchone()
+        group_name = group["group_name"] if group else "未知分组"
+        group_path = get_group_path(conn, group_id)
+
+        now = datetime.now()
 
         # 检查是否存在相同 uuid 的终端
         sql = "select id, group_id, group_name from sys_terminal where uuid = %s"
         cursor.execute(sql, (data.uuid,))
         exist = cursor.fetchone()
         if exist:
+            sql = """
+                            update sys_terminal set
+                                username = %s, hostname = %s, ip_address = %s, local_ip = %s,
+                                mac_address = %s, os_name = %s, os_version = %s, is_64bit = %s, last_login = now()
+                            where uuid = %s
+                        """
+            cursor.execute(sql, (
+                data.username, data.hostname, data.ip_address, data.local_ip,
+                data.mac_address, data.os_name, data.os_version, data.is_64bit, data.uuid
+            ))
+            conn.commit()
             return success_response(
                 code=HTTP_OK,
                 message="终端已存在，跳过重复注册",
                 data={
                     "terminal_id": exist["id"],
-                    "group_id": exist["group_id"],
-                    "group_name": exist["group_name"]
+                    "group_id": group_id,
+                    "group_name": group_name
                 }
             )
+        else:
+            # 不存在：插入新终端
+            sql = """
+                        insert into sys_terminal (
+                            username, hostname, uuid, ip_address, local_ip, mac_address,
+                            os_name, os_version, is_64bit, install_time, status, createdon,
+                            group_id, group_name, group_path
+                        ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, now(), %s, %s, %s)
+                    """
+            cursor.execute(sql, (
+                data.username, data.hostname, data.uuid, data.ip_address, data.local_ip,
+                data.mac_address, data.os_name, data.os_version, data.is_64bit, now,
+                group_id, group_name, group_path
+            ))
+            conn.commit()
+            terminal_id = cursor.lastrowid
 
-        # 获取分组名称
-        sql = "select group_name from sys_group where group_id = %s"
-        cursor.execute(sql, (group_id,))
-        group = cursor.fetchone()
-        group_name = group["group_name"] if group else "未知分组"
-
-        # 插入终端信息
-        sql = """
-                    insert into sys_terminal (
-                        username, hostname, uuid, ip_address, local_ip, mac_address,
-                        os_name, os_version, is_64bit, install_time, status, createdon,
-                        group_id, group_name
-                    ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, now(), %s, %s)
-                """
-        now = datetime.now()
-        cursor.execute(sql, (
-            data.username, data.hostname, data.uuid, data.ip_address, data.local_ip,
-            data.mac_address, data.os_name, data.os_version, data.is_64bit, now,
-            group_id, group_name
-        ))
-        conn.commit()
-        terminal_id = cursor.lastrowid
-
-        return success_response(
-            code=HTTP_OK,
-            message="终端注册成功",
-            data={
-                "terminal_id": terminal_id,
-                "group_id": group_id,
-                "group_name": group_name
-            }
-        )
+            return success_response(
+                code=HTTP_OK,
+                message="终端注册成功",
+                data={
+                    "terminal_id": terminal_id,
+                    "group_id": group_id,
+                    "group_name": group_name
+                }
+            )
     except Exception as e:
         return error_response(
             code=HTTP_BAD_REQUEST,
