@@ -1,11 +1,13 @@
 import axios from 'axios'
 import router from '@/router'
 import { useUserStore } from '@/stores/useUserStore'
+import qs from 'qs'
 
 // 创建 axios 实例
 const service = axios.create({
   baseURL: 'http://localhost:8000', 
-  timeout: 5000
+  timeout: 5000,
+  
 })
 
 // 请求前加 token

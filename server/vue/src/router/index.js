@@ -51,6 +51,12 @@ const router = createRouter({
           }
         },
         {
+          path: '/management/terminal/detail/:id',
+          name: 'TerminalDetail',
+          component: () => import('@/views/terminal_admin/TerminalDetail.vue'),
+          meta: { requiresAuth: true, title: '终端详情' }
+        },
+        {
           path: '/management/admin',
           name: Admin,
           component: Admin,
