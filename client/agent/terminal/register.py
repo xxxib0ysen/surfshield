@@ -24,20 +24,23 @@ def get_hostname():
 def get_uuid():
     return str(uuid.uuid1())
 
-# 获取公网 IP
+# 获取公网 IP（通过在线服务）
 def get_ip_address():
     try:
-        return socket.gethostbyname(socket.gethostname())
+        return requests.get("https://api.ipify.org", timeout=3).text
     except:
         return "0.0.0.0"
 
-# 获取本地局域网 IP
+# 获取局域网（本地）IP
 def get_local_ip():
-    for iface, snics in psutil.net_if_addrs().items():
-        for snic in snics:
-            if snic.family == socket.AF_INET and not snic.address.startswith("127."):
-                return snic.address
-    return "127.0.0.1"
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except:
+        return "127.0.0.1"
 
 # 获取 MAC 地址
 def get_mac_address():
