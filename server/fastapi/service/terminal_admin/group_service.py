@@ -1,3 +1,4 @@
+from utils.common import format_time_fields, format_time_in_rows
 from utils.connect import create_connection
 from utils.response import success_response, error_response
 from model.terminal_admin.group_model import GroupCreateUpdate
@@ -21,6 +22,7 @@ def get_group_tree_service():
         cursor = conn.cursor()
         cursor.execute("select * from sys_group order by parent_id, group_id")
         rows = cursor.fetchall()
+        rows = format_time_in_rows(rows, ['createdon', 'updatedon'])
 
         group_map = {row['group_id']: {**row, 'children': []} for row in rows}
         root = []
@@ -125,6 +127,7 @@ def get_group_detail_service(group_id: int):
         row = cursor.fetchone()
         if not row:
             return error_response(message="分组不存在", code=HTTP_NOT_FOUND)
+        row = format_time_fields(row, ['createdon', 'updatedon'])
         return success_response(data=row, code=HTTP_OK)
     except Exception as e:
         return error_response(message=f"获取分组详情失败：{str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)

@@ -1,7 +1,7 @@
 from utils.connect import create_connection
 from utils.response import success_response, error_response
 from utils.status_code import *
-from utils.common import format_datetime, is_valid_process_keyword
+from utils.common import is_valid_process_keyword, format_time_in_rows
 from datetime import datetime
 
 # 添加单个进程
@@ -128,8 +128,7 @@ def get_process_list():
         sql = "select id, process_name, status, create_time from process_control order by create_time desc"
         cursor.execute(sql)
         rows = cursor.fetchall()
-        for row in rows:
-            row["create_time"] = format_datetime(row["create_time"])
+        rows = format_time_in_rows(rows, ['create_time'])
         return success_response(data=rows)
     except Exception as e:
         return error_response("查询失败", HTTP_INTERNAL_SERVER_ERROR, str(e))

@@ -24,15 +24,13 @@ def paginate_query(page: int, page_size: int):
     return offset, page_size
 
 # 格式化时间
-def format_datetime(dt):
-    if isinstance(dt, datetime):
-        return dt.strftime("%Y-%m-%d %H:%M:%S")
-    if isinstance(dt, str):
-        try:
-            return datetime.strptime(dt, "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
-        except ValueError:
-            return dt
-    return None
+def format_time_fields(obj: dict, fields: list[str]) -> dict:
+    for key in fields:
+        if key in obj and isinstance(obj[key], datetime):
+            obj[key] = obj[key].strftime('%Y-%m-%d %H:%M:%S')
+    return obj
+def format_time_in_rows(rows: list[dict], fields: list[str]) -> list[dict]:
+    return [format_time_fields(row, fields) for row in rows]
 
 
 # 验证 URL 是否符合格式（支持通配符）

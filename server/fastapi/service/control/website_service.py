@@ -1,7 +1,7 @@
 import pymysql
 from utils.connect import create_connection
 from utils.response import success_response, error_response
-from utils.common import validate_url, format_datetime
+from utils.common import validate_url, format_time_in_rows, format_time_fields
 from model.control.website_model import *
 
 # 检查类型是否存在
@@ -40,8 +40,7 @@ def get_website_type():
                 order by wt.createdon desc
             """)
             types = cursor.fetchall()
-            for t in types:
-                t["last_modified"] = format_datetime(t["last_modified"])
+            types = format_time_in_rows(types, ['last_modified'])
         return success_response(types, "获取网站类型成功")
     finally:
         conn.close()
@@ -170,12 +169,14 @@ def get_rules_grouped_by_type():
                         "rules": []
                     }
                 if row["website_id"]:
-                    result[tid]["rules"].append({
+                    rule = format_time_fields({
                         "website_id": row["website_id"],
                         "website_url": row["website_url"],
                         "status": row["status"],
-                        "createdon": format_datetime(row["createdon"])
-                    })
+                        "createdon": row["createdon"]
+                    }, ['createdon'])
+                    result[tid]["rules"].append(rule)
+
             return success_response(list(result.values()), "获取规则成功")
     finally:
         conn.close()

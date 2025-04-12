@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 
+from utils.common import format_time_fields
 from utils.connect import create_connection
 from utils.response import success_response, error_response
 from utils.status_code import HTTP_OK, HTTP_BAD_REQUEST
@@ -67,6 +68,9 @@ def get_terminal_list(query: TerminalQuery, group_ids: Optional[List[int]] = Non
         cursor.execute(data_sql, values)
         rows = cursor.fetchall()
 
+        time_keys = ['install_time', 'createdon', 'last_login']
+        rows = [format_time_fields(row, time_keys) for row in rows]
+
         return success_response(
             code=HTTP_OK,
             message="查询成功",
@@ -89,6 +93,7 @@ def get_terminal_detail(terminal_id: int):
         result = cursor.fetchone()
 
         if result:
+            result = format_time_fields(result, ['install_time', 'createdon', 'last_login'])
             return success_response(
                 code=HTTP_OK,
                 message="获取成功",

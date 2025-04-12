@@ -1,5 +1,7 @@
 import re
 from datetime import datetime
+
+from utils.common import format_time_in_rows
 from utils.connect import create_connection
 from utils.response import error_response, success_response
 from utils.security import hash_password, verify_password
@@ -25,6 +27,7 @@ def get_admin_list(page: int, size: int):
             list_sql += " order by createdon desc limit %s offset %s"
             cursor.execute(list_sql, [size, offset])
             data = cursor.fetchall()
+            data = format_time_in_rows(data, ['createdon'])
             return success_response(data={"total": total, "data": data})
     finally:
         conn.close()

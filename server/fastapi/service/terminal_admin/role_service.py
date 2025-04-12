@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from service.terminal_admin.perm_service import get_permission_ids_by_role, update_role_permissions
+from utils.common import format_time_fields
 from utils.connect import create_connection
 from utils.response import error_response, success_response
 from utils.status_code import HTTP_CONFLICT, HTTP_NOT_FOUND
@@ -16,8 +17,9 @@ def get_all_roles():
                             order by createdon desc
                         """
             cursor.execute(sql)
-            data = cursor.fetchall()
-            return success_response(data=data)
+            rows = cursor.fetchall()
+            rows = [format_time_fields(row, ['createdon']) for row in rows]
+            return success_response(data=rows)
     finally:
         conn.close()
 
@@ -34,6 +36,8 @@ def get_role_detail(role_id: int):
             row = cursor.fetchone()
             if not row:
                 return error_response("角色不存在", code=HTTP_NOT_FOUND)
+
+            row = format_time_fields(row, ['createdon'])
 
             # 查询权限列表
             perm_res = get_permission_ids_by_role(role_id)
