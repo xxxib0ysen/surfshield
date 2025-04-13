@@ -2,9 +2,10 @@ from typing import Optional, List
 
 from fastapi import APIRouter, Body, Depends, Query
 
-from model.terminal_admin.terminal_model import TerminalQuery, TerminalMoveGroup
+from model.terminal_admin.terminal_model import TerminalQuery, TerminalMoveGroup, TerminalStatusCount, \
+    OSDistributionItem
 from service.terminal_admin.terminal_service import get_terminal_list, get_terminal_detail, move_terminal_to_group, \
-    get_terminal_columns
+    get_terminal_columns, get_terminal_status_count, get_terminal_os_distribution
 
 router = APIRouter()
 
@@ -29,4 +30,12 @@ def api_move_terminal_to_group(data: TerminalMoveGroup):
 def api_get_terminal_columns():
     return get_terminal_columns()
 
+# 获取终端状态统计（在线/离线）
+@router.get("/status-count", response_model=TerminalStatusCount)
+def get_terminal_status():
+    return get_terminal_status_count()
 
+# 获取终端操作系统分布
+@router.get("/os-distribution", response_model=List[OSDistributionItem])
+def get_terminal_os():
+    return get_terminal_os_distribution()

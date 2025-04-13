@@ -19,3 +19,13 @@ export function getTerminalColumns() {
 export function moveTerminalToGroup(data) {
     return request.post('/terminal/move_group', data)
 }
+
+// 获取终端状态统计
+export function getTerminalStatusCount() {
+    return request.get('/terminal/status-count')
+  }
+  
+  // 获取操作系统分布
+  export function getTerminalOSDistribution() {
+    return request.get('/terminal/os-distribution')
+  }

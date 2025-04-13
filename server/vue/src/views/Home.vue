@@ -23,10 +23,87 @@
 import { ref, onMounted } from 'vue'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
+import { getTerminalStatusCount, getTerminalOSDistribution } from '@/api/terminal_admin/terminal'
 
-// 模拟
+
 const terminalChartRef = ref(null)
 const osChartRef = ref(null)
+
+// 终端状态
+const renderTerminalStatusChart = async () => {
+  const chart = echarts.init(terminalChartRef.value)
+  try {
+    const res = await getTerminalStatusCount()
+    const { online, offline } = res.data
+
+    chart.setOption({
+      title: {
+        text: '终端总数',
+        left: 'center',
+        top: '45%',
+        textStyle: {
+          fontSize: 14,
+          color: '#999'
+        }
+      },
+      tooltip: { trigger: 'item' },
+      legend: { top: 20, left: 'left' },
+      series: [
+        {
+          name: '终端状态',
+          type: 'pie',
+          radius: ['50%', '70%'],
+          avoidLabelOverlap: false,
+          label: { show: true, formatter: '{b} ({c})' },
+          data: [
+            { value: online, name: '在线终端', itemStyle: { color: '#67C23A' } },
+            { value: offline, name: '离线终端', itemStyle: { color: '#F56C6C' } }
+          ]
+        }
+      ]
+    })
+  } catch (err) {
+    ElMessage.error('获取终端状态统计失败')
+  }
+}
+
+// 操作系统分布
+const renderOSChart = async () => {
+  const chart = echarts.init(osChartRef.value)
+  try {
+    const res = await getTerminalOSDistribution()
+    const osData = res.data.map(item => ({
+      name: item.name,
+      value: item.count
+    }))
+
+    chart.setOption({
+      title: {
+        text: '操作系统分布',
+        left: 'center',
+        top: '45%',
+        textStyle: {
+          fontSize: 14,
+          color: '#ccc'
+        }
+      },
+      tooltip: { trigger: 'item' },
+      legend: { top: 20, left: 'left' },
+      series: [
+        {
+          name: '操作系统',
+          type: 'pie',
+          radius: ['50%', '70%'],
+          avoidLabelOverlap: false,
+          label: { show: true, formatter: '{b} ({c})' },
+          data: osData
+        }
+      ]
+    })
+  } catch (err) {
+    ElMessage.error('获取操作系统分布失败')
+  }
+}
 
 const deployTerminals = () => {
 ElMessage.warning("点击部署终端")
@@ -34,78 +111,8 @@ ElMessage.warning("点击部署终端")
 }
 
 onMounted(() => {
-const terminalChart = echarts.init(terminalChartRef.value)
-terminalChart.setOption({
-    title: {
-    text: '终端总数',
-    left: 'center',
-    top: '45%',
-    textStyle: {
-        fontSize: 14,
-        color: '#999',
-    }
-    },
-    tooltip: {
-    trigger: 'item',
-    },
-    legend: {
-    top: 20,
-    left: 'left'
-    },
-    series: [
-    {
-        name: '终端状态',
-        type: 'pie',
-        radius: ['50%', '70%'],
-        avoidLabelOverlap: false,
-        label: {
-        show: true,
-        formatter: '{b} ({c})',
-        },
-        data: [
-        { value: 3, name: '在线终端', itemStyle: { color: '#67C23A' } },
-        { value: 2, name: '离线终端', itemStyle: { color: '#F56C6C' } }
-        ]
-    }
-    ]
-})
-
-const osChart = echarts.init(osChartRef.value)
-osChart.setOption({
-    title: {
-    text: '操作系统分布',
-    left: 'center',
-    top: '45%',
-    textStyle: {
-        fontSize: 14,
-        color: '#ccc',
-    }
-    },
-    tooltip: {
-    trigger: 'item'
-    },
-    legend: {
-    top: 20,
-    left: 'left'
-    },
-    series: [
-    {
-        name: '操作系统',
-        type: 'pie',
-        radius: ['50%', '70%'],
-        avoidLabelOverlap: false,
-        label: {
-        show: true,
-        formatter: '{b} ({c})',
-        },
-        data: [
-        { value: 2, name: 'Windows' },
-        { value: 1, name: 'MacOS' },
-        { value: 2, name: 'Linux' }
-        ]
-    }
-    ]
-})
+  renderTerminalStatusChart()
+  renderOSChart()
 })
 </script>
 

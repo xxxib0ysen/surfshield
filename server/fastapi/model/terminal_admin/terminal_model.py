@@ -66,3 +66,18 @@ class TerminalOut(BaseModel):
 class TerminalPageOut(BaseModel):
     total: int
     data: List[TerminalOut]
+
+
+# 终端在线/离线数量响应
+class TerminalStatusCount(BaseModel):
+    online: int
+    offline: int
+
+# 操作系统分布项
+class OSDistributionItem(BaseModel):
+    name: str
+    count: int
+
+# 操作系统分布响应列表
+class OSDistributionOut(BaseModel):
+    data: List[OSDistributionItem]

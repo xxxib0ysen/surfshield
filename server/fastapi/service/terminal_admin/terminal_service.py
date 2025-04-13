@@ -4,7 +4,7 @@ from typing import Optional, List
 from utils.common import format_time_fields
 from utils.connect import create_connection
 from utils.response import success_response, error_response
-from utils.status_code import HTTP_OK, HTTP_BAD_REQUEST
+from utils.status_code import HTTP_OK, HTTP_BAD_REQUEST, HTTP_INTERNAL_SERVER_ERROR
 from model.terminal_admin.terminal_model import TerminalQuery, TerminalMoveGroup
 
 # 查询终端列表
@@ -270,3 +270,38 @@ def update_terminal_status(terminal_id: int, status: int):
         return success_response(code=HTTP_OK, message="终端状态已更新")
     except Exception as e:
         return error_response(code=HTTP_BAD_REQUEST, message=f"更新失败: {str(e)}")
+
+
+# 终端状态统计
+def get_terminal_status_count():
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+
+        # 在线
+        cursor.execute("select count(*) as count from sys_terminal where status = 1")
+        online = cursor.fetchone()["count"]
+
+        # 离线
+        cursor.execute("select count(*) as count from sys_terminal where status = 0")
+        offline = cursor.fetchone()["count"]
+
+        return { "online": online, "offline": offline }
+    except Exception as e:
+        return error_response(message=f"获取终端状态统计失败：{str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)
+
+
+# 查询终端操作系统分布
+def get_terminal_os_distribution():
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+
+        # 按操作系统名称统计数量
+        sql = "select os_name as name, count(*) as count from sys_terminal group by os_name"
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+
+        return rows
+    except Exception as e:
+        return error_response(message=f"获取操作系统分布失败：{str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)
