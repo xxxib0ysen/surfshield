@@ -18,6 +18,7 @@
             <el-card shadow="never">
                 <el-table :data="processList" border 
                     :default-sort="{ prop: 'start_time', order: 'descending' }"
+                    @row-contextmenu="handleContextMenu"
                     v-loading="loading" style="width: 100%;" height="550">
                     <el-table-column prop="username" label="用户名" />
                     <el-table-column prop="process_name" label="进程名" />
@@ -49,15 +50,31 @@
                     <el-table-column prop="network_status" label="当前连接状态" />
 
                 </el-table>
+                <div style="margin-top: 10px; font-size: 12px; color: #909399;">
+                🛈 右键进程可执行操作
+                </div>
             </el-card>
+            <!-- 右键菜单 -->
+            <div
+                v-if="contextMenu.visible"
+                class="custom-context-menu"
+                :style="{ top: contextMenu.y + 'px', left: contextMenu.x + 'px' }"
+                >
+                <div class="menu-item" @click="refreshSingleTerminal(contextMenu.row)">
+                      刷新
+                </div>
+                <div class="menu-item" @click="killProcess(contextMenu.row)">
+                      终止进程
+                </div>
+            </div>
         </el-main>
     </el-container>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getProcessList } from '@/api/monitor/process_monitor'
-import { ElMessage } from 'element-plus'
+import { getProcessList, postKillProcess } from '@/api/monitor/process_monitor'
+import { ElMessage ,ElMessageBox} from 'element-plus'
 
 const filters = ref({
     username: ''
@@ -69,7 +86,7 @@ let lastDataHash = ''
 let timer = null
 
 // 获取进程数据
-const loadProcessList = async () => {
+const loadProcessList = async (force = false) => {
   try {
     loading.value = true
     const res = await getProcessList()
@@ -101,7 +118,7 @@ const loadProcessList = async () => {
 const startTimer = () => {
   timer = setInterval(() => {
     loadProcessList()
-  }, 30000) 
+  }, 120000) 
 }
 const stopTimer = () => {
   if (timer) clearInterval(timer)
@@ -147,6 +164,55 @@ const handleClear = () => {
     loadProcessList()
 }
 
+// 右键菜单控制
+const contextMenu = ref({
+  visible: false,
+  x: 0,
+  y: 0,
+  row: null
+})
+const handleContextMenu = (row, column, event) => {
+  event.preventDefault()
+  contextMenu.value = {
+    visible: true,
+    x: event.clientX,
+    y: event.clientY,
+    row
+  }
+}
+
+document.addEventListener('click', () => {
+  contextMenu.value.visible = false
+})
+const refreshSingleTerminal = (row) => {
+  contextMenu.value.visible = false
+  filters.value.username = row.username
+  loadProcessList()
+}
+
+// 终止进程
+const killProcess = async (row) => {
+  contextMenu.value.visible = false
+  try {
+    await ElMessageBox.confirm(
+      `确定要终止终端 [${row.username}] 的进程 "${row.process_name}" (PID: ${row.pid}) 吗？`,
+      '确认操作',
+      { type: 'warning' }
+    )
+    const res = await postKillProcess({
+      terminal_id: row.terminal_id,
+      pid: row.pid
+    })
+    if (res.data.code === 200) {
+      ElMessage.success('已终止该用户进程')
+      loadProcessList(true)
+    } else {
+      ElMessage.error(res.data.message || '终止失败')
+    }
+  } catch (e) {
+  }
+}
+
 onMounted(() => {
     loadProcessList()
 })
@@ -173,4 +239,30 @@ onMounted(() => {
 .search-icon:hover {
     color: #409EFF;
 }
+
+.custom-context-menu {
+  position: fixed;
+  background-color: #ffffff;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  width: 150px;
+  padding: 6px 0;
+}
+
+.menu-item {
+  padding: 6px 12px;
+  margin: 2px 0;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.menu-item:hover {
+  background-color: #f1f1f1;
+  color: #333;
+  border-radius: 4px;
+}
+
 </style>

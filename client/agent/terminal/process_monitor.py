@@ -1,5 +1,6 @@
 import ctypes
 import getpass
+import json
 from ctypes import wintypes
 
 import psutil
@@ -9,6 +10,7 @@ from datetime import datetime
 import os
 from client.agent.terminal.register import get_terminal_id
 from client.config import config
+from client.config.config import redis_client
 
 terminal_id = get_terminal_id()
 terminal_user = getpass.getuser().lower()
@@ -121,3 +123,29 @@ def start_process_report_loop():
     while True:
         report_process()
         time.sleep(5)
+
+# 终止进程
+def handle_command(cmd: dict):
+    print(f"[🔔] 收到指令: {cmd}")
+    if cmd.get("action") == "kill_process":
+        pid = cmd.get("pid")
+        try:
+            proc = psutil.Process(pid)
+            proc.terminate()
+            print(f"已终止进程 PID: {pid}")
+        except Exception as e:
+            print(f"终止进程失败: {e}")
+
+#  Redis 订阅监听线程
+def listen_for_commands():
+    pubsub = redis_client.pubsub()
+    pubsub.subscribe(f"terminal:cmd:{terminal_id}")
+    print(f"正在监听 Redis 指令 terminal:cmd:{terminal_id}")
+
+    for msg in pubsub.listen():
+        if msg['type'] == 'message':
+            try:
+                cmd = json.loads(msg['data'])
+                handle_command(cmd)
+            except Exception as e:
+                print(f"[指令处理失败] {e}")

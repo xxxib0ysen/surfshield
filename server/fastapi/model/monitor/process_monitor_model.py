@@ -33,3 +33,7 @@ class ProcessInfo(BaseModel):
     description: Optional[str] = ""
     start_time: str
     update_time: str
+
+class KillProcessRequest(BaseModel):
+    terminal_id: int = Field(..., description="终端 ID")
+    pid: int = Field(..., description="进程 PID")

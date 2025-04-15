@@ -7,3 +7,7 @@ export function getProcessList(terminalId) {
     params: { terminal_id: terminalId }
   })
 }
+
+export const postKillProcess = (data) => {
+    return request.post('/client/kill_process', data)
+}

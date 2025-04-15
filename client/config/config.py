@@ -1,6 +1,16 @@
 import os
 
+from redis.client import Redis
+
 server_url = "http://localhost:8000"
+
+# Redis 连接信息
+redis_client = Redis(
+    host="127.0.0.1",
+    port=6379,
+    password=None,
+    decode_responses=True
+)
 
 # 获取网站访问控制规则列表
 rule_sync_endpoint = "/client/website_control/listGrouped"
@@ -22,3 +32,5 @@ log_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs",
 
 # 进程拦截模块日志路径
 process_log_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs", "process_log.log")
+
+

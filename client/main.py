@@ -1,9 +1,10 @@
 import sys
 import os
+
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
-from client.agent.terminal.process_monitor import start_process_report_loop
-from client.agent.terminal.register import report_terminal_status, register_terminal, startup_routine
+from client.agent.terminal.process_monitor import start_process_report_loop, listen_for_commands
+from client.agent.terminal.register import report_terminal_status, startup_routine
 import atexit
 import signal
 import time
@@ -53,6 +54,9 @@ def on_exit():
 def start_process_report_loop_thread():
     Thread(target=start_process_report_loop, daemon=True).start()
 
+# 终止进程监听
+def start_command_listener():
+    Thread(target=listen_for_commands, daemon=True).start()
 
 def main():
     print("客户端启动中...")
@@ -75,6 +79,8 @@ def main():
     start_process_guard_loop()
     # 采集用户进程
     start_process_report_loop_thread()
+    # 终止进程
+    start_command_listener()
 
     try:
         while True:

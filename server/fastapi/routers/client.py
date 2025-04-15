@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends
 
-from model.monitor.process_monitor_model import ProcessReport
+from model.monitor.process_monitor_model import ProcessReport, KillProcessRequest
 from model.terminal_admin.terminal_model import TerminalRegisterRequest, TerminalStatusUpdate, TerminalUpdateRequest
 from service.control.process_service import get_process_list
 from service.control.website_service import get_rules_grouped_by_type
-from service.monitor.process_monitor_service import save_process_to_redis
+from service.monitor.process_monitor_service import save_process_to_redis, send_kill_command
 from service.terminal_admin.terminal_service import register_terminal, update_terminal_status, update_terminal_info
+from utils.response import success_response, error_response
+from utils.status_code import HTTP_OK, HTTP_BAD_REQUEST
 
 router = APIRouter()
 
@@ -43,3 +45,14 @@ def list_grouped_rules():
 @router.post("/process-report")
 def report_process(data: ProcessReport):
     return save_process_to_redis(data.terminal_id, [item.dict() for item in data.process_list])
+
+@router.post("/kill_process", summary="远程终止终端进程")
+def kill_process(req: KillProcessRequest):
+    try:
+        success = send_kill_command(req.terminal_id, req.pid)
+        if success:
+            return success_response(message="终止进程指令已下发", code=HTTP_OK)
+        else:
+            return error_response(message="指令发送失败或终端不在线", code=HTTP_BAD_REQUEST)
+    except Exception as e:
+        return error_response(message=f"服务异常：{str(e)}", code=HTTP_BAD_REQUEST)
