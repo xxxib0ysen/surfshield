@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends
 
+from model.monitor.process_monitor_model import ProcessReport
 from model.terminal_admin.terminal_model import TerminalRegisterRequest, TerminalStatusUpdate, TerminalUpdateRequest
 from service.control.process_service import get_process_list
 from service.control.website_service import get_rules_grouped_by_type
+from service.monitor.process_monitor_service import save_process_to_redis
 from service.terminal_admin.terminal_service import register_terminal, update_terminal_status, update_terminal_info
 
 router = APIRouter()
@@ -36,3 +38,8 @@ async def list_rules():
 @router.get("/website_control/listGrouped")
 def list_grouped_rules():
     return get_rules_grouped_by_type()
+
+# 客户端上报进程数据
+@router.post("/process-report")
+def report_process(data: ProcessReport):
+    return save_process_to_redis(data.terminal_id, [item.dict() for item in data.process_list])
