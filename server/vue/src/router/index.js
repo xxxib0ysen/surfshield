@@ -89,6 +89,12 @@ const router = createRouter({
           meta: { requiresAuth: true }
         },
         {
+          path: '/monitor/process_monitor',
+          name: 'ProcessMonitor',
+          component: () => import('@/views/monitor/ProcessMonitor.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
           path: '/403',
           component: () => import('@/views/403.vue'),
           meta: { title: '无权限' }
