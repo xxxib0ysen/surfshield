@@ -31,6 +31,20 @@ class TerminalRegisterRequest(BaseModel):
     mac_address: str
     os_name: str
     os_version: str
+    install_time: str
+    is_64bit: int
+
+# 更新
+class TerminalUpdateRequest(BaseModel):
+    username: str
+    hostname: str
+    uuid: str
+    ip_address: str
+    local_ip: str
+    mac_address: str
+    os_name: str
+    os_version: str
+    install_time: str
     is_64bit: int
 
 class TerminalStatusUpdate(BaseModel):

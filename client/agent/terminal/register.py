@@ -2,8 +2,11 @@ import os
 import uuid
 import platform
 import socket
+import winreg
+from datetime import datetime
 
 import psutil
+import subprocess
 import requests
 from getpass import getuser
 
@@ -20,9 +23,17 @@ def get_username():
 def get_hostname():
     return platform.node()
 
-# 获取唯一标识 UUID
+# 获取唯一标识
 def get_uuid():
-    return str(uuid.uuid1())
+    try:
+        key = winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\Microsoft\Cryptography"
+        )
+        value, _ = winreg.QueryValueEx(key, "MachineGuid")
+        return value
+    except Exception as e:
+        return None
 
 # 获取公网 IP（通过在线服务）
 def get_ip_address():
@@ -49,7 +60,14 @@ def get_mac_address():
 
 # 获取操作系统名称
 def get_os_name():
-    return platform.system()
+    try:
+        output = subprocess.check_output("systeminfo", shell=True, encoding="gbk", errors="ignore")
+        for line in output.splitlines():
+            if "OS 名称" in line or "OS Name" in line:
+                return line.split(":", 1)[1].strip()
+    except Exception as e:
+        print(f"获取操作系统名称失败: {e}")
+    return "未知操作系统"
 
 # 获取操作系统版本号
 def get_os_version():
@@ -58,6 +76,29 @@ def get_os_version():
 # 判断是否为 64 位系统
 def is_64bit():
     return int(platform.machine().endswith('64'))
+
+# 获取操作系统安装时间
+def get_install_time():
+    try:
+        output = subprocess.check_output('systeminfo', shell=True, encoding='gbk', errors='ignore')
+        for line in output.splitlines():
+            if "初始安装日期" in line or "Original Install Date" in line:
+                date_str = line.split(":", 1)[1].strip()
+                known_formats = [
+                    "%Y/%m/%d, %H:%M:%S",
+                    "%m/%d/%Y, %I:%M:%S %p",
+                    "%Y-%m-%d %H:%M:%S"
+                ]
+                for fmt in known_formats:
+                    try:
+                        return datetime.strptime(date_str, fmt).strftime("%Y-%m-%d %H:%M:%S")
+                    except:
+                        continue
+                print("[调试] 未匹配安装时间格式：", date_str)
+    except Exception as e:
+        print(f"[调试] 获取安装时间失败: {e}")
+    return None
+
 
 # 采集终端完整信息
 def collect_terminal_info():
@@ -70,6 +111,7 @@ def collect_terminal_info():
         "mac_address": get_mac_address(),
         "os_name": get_os_name(),
         "os_version": get_os_version(),
+        "install_time": get_install_time() or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "is_64bit": is_64bit()
     }
 
@@ -105,6 +147,19 @@ def register_terminal():
     except Exception as e:
         print(f"[异常] 无法连接服务器: {e}")
 
+# 更新终端信息
+def update_terminal_info():
+    info = collect_terminal_info()
+    try:
+        url = config.server_url + "/client/update"
+        res = requests.post(url, json=info)
+        result = res.json()
+        print(f"[更新] {result.get('message')}")
+        print("[DEBUG] 上传终端信息：", info)
+
+    except Exception as e:
+        print(f"[异常] 更新失败: {e}")
+
 # 上报终端状态
 def report_terminal_status(status: int):
     if not os.path.exists(terminal_id_file):
@@ -121,3 +176,8 @@ def report_terminal_status(status: int):
     except Exception as e:
         print(f"[异常] 上报状态失败: {e}")
 
+def startup_routine():
+    if os.path.exists(terminal_id_file):
+        update_terminal_info()
+    else:
+        register_terminal()

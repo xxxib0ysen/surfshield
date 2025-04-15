@@ -192,64 +192,92 @@ def register_terminal(data):
         group_name = group["group_name"] if group else "未知分组"
         group_path = get_group_path(conn, group_id)
 
-        now = datetime.now()
-
         # 检查是否存在相同 uuid 的终端
         sql = "select id, group_id, group_name from sys_terminal where uuid = %s"
         cursor.execute(sql, (data.uuid,))
-        exist = cursor.fetchone()
-        if exist:
-            sql = """
-                            update sys_terminal set
-                                username = %s, hostname = %s, ip_address = %s, local_ip = %s,
-                                mac_address = %s, os_name = %s, os_version = %s, is_64bit = %s, last_login = now()
-                            where uuid = %s
-                        """
-            cursor.execute(sql, (
-                data.username, data.hostname, data.ip_address, data.local_ip,
-                data.mac_address, data.os_name, data.os_version, data.is_64bit, data.uuid
-            ))
-            conn.commit()
-            return success_response(
-                code=HTTP_OK,
-                message="终端已存在，跳过重复注册",
-                data={
-                    "terminal_id": exist["id"],
-                    "group_id": group_id,
-                    "group_name": group_name
-                }
-            )
-        else:
-            # 不存在：插入新终端
-            sql = """
-                        insert into sys_terminal (
-                            username, hostname, uuid, ip_address, local_ip, mac_address,
-                            os_name, os_version, is_64bit, install_time, status, createdon,
-                            group_id, group_name, group_path
-                        ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, now(), %s, %s, %s)
-                    """
-            cursor.execute(sql, (
-                data.username, data.hostname, data.uuid, data.ip_address, data.local_ip,
-                data.mac_address, data.os_name, data.os_version, data.is_64bit, now,
-                group_id, group_name, group_path
-            ))
-            conn.commit()
-            terminal_id = cursor.lastrowid
+        if cursor.fetchone():
+            return error_response(code=HTTP_BAD_REQUEST, message="终端已存在，禁止重复注册")
 
-            return success_response(
-                code=HTTP_OK,
-                message="终端注册成功",
-                data={
-                    "terminal_id": terminal_id,
-                    "group_id": group_id,
-                    "group_name": group_name
-                }
-            )
+        install_time = None
+        if getattr(data, "install_time", None):
+            for fmt in ["%Y-%m-%d %H:%M:%S", "%Y/%m/%d, %H:%M:%S"]:
+                try:
+                    install_time = datetime.strptime(data.install_time, fmt)
+                    break
+                except:
+                    continue
+        if not install_time:
+            install_time = datetime.now()
+
+        # 插入新终端
+        sql = """
+                insert into sys_terminal (
+                    username, hostname, uuid, ip_address, local_ip, mac_address,
+                    os_name, os_version, is_64bit, install_time,
+                    status, createdon, group_id, group_name, group_path
+                ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1, now(), %s, %s, %s)
+            """
+        cursor.execute(sql, (
+            data.username, data.hostname, data.uuid, data.ip_address, data.local_ip,
+            data.mac_address, data.os_name, data.os_version, data.is_64bit, install_time,
+            group_id, group_name, group_path
+        ))
+        conn.commit()
+
+        terminal_id = cursor.lastrowid
+        return success_response(
+            code=HTTP_OK,
+            message="终端注册成功",
+        )
     except Exception as e:
         return error_response(
             code=HTTP_BAD_REQUEST,
             message=f"注册失败: {str(e)}"
         )
+
+# 更新
+def update_terminal_info(data):
+    try:
+        if not data.uuid:
+            return error_response(code=HTTP_BAD_REQUEST, message="缺少 uuid，无法更新")
+
+        conn = create_connection()
+        cursor = conn.cursor()
+
+        # 检查是否存在该终端
+        cursor.execute("select id from sys_terminal where uuid = %s", (data.uuid,))
+        row = cursor.fetchone()
+        if not row:
+            return error_response(code=HTTP_BAD_REQUEST, message="终端不存在，无法更新")
+
+        install_time = None
+        if getattr(data, "install_time", None):
+            for fmt in ["%Y-%m-%d %H:%M:%S", "%Y/%m/%d, %H:%M:%S"]:
+                try:
+                    install_time = datetime.strptime(data.install_time, fmt)
+                    break
+                except:
+                    continue
+        if not install_time:
+            install_time = datetime.now()
+
+        sql = """
+            update sys_terminal set
+                username = %s, hostname = %s, ip_address = %s, local_ip = %s,
+                mac_address = %s, os_name = %s, os_version = %s,
+                install_time = %s, is_64bit = %s, last_login = now()
+            where uuid = %s
+        """
+        cursor.execute(sql, (
+            data.username, data.hostname, data.ip_address, data.local_ip,
+            data.mac_address, data.os_name, data.os_version, install_time,
+            data.is_64bit, data.uuid
+        ))
+        conn.commit()
+
+        return success_response(code=HTTP_OK, message="终端信息更新成功")
+    except Exception as e:
+        return error_response(code=HTTP_INTERNAL_SERVER_ERROR, message=f"更新失败：{str(e)}")
 
 # 更新终端在线状态
 def update_terminal_status(terminal_id: int, status: int):

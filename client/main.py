@@ -4,7 +4,7 @@ import sys
 import os
 
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
-from client.agent.terminal.register import report_terminal_status, register_terminal
+from client.agent.terminal.register import report_terminal_status, register_terminal, startup_routine
 import time
 from threading import Thread
 
@@ -41,8 +41,7 @@ def main():
     print("客户端启动中...")
     ensure_log_dir()
 
-    # 注册终端（首次）+ 上报在线状态
-    register_terminal()
+    startup_routine()
     report_terminal_status(1)  # status=1 表示上线
 
     # 注册退出信号

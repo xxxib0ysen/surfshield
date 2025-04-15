@@ -1,16 +1,27 @@
 from fastapi import APIRouter, Depends
 
-from model.terminal_admin.terminal_model import TerminalRegisterRequest, TerminalStatusUpdate
+from model.terminal_admin.terminal_model import TerminalRegisterRequest, TerminalStatusUpdate, TerminalUpdateRequest
 from service.control.process_service import get_process_list
 from service.control.website_service import get_rules_grouped_by_type
-from service.terminal_admin.terminal_service import register_terminal, update_terminal_status
+from service.terminal_admin.terminal_service import register_terminal, update_terminal_status, update_terminal_info
 
 router = APIRouter()
 
 # 终端注册接口
 @router.post("/register")
 def api_register_terminal(data: TerminalRegisterRequest):
+    if not data.uuid or data.uuid.strip() == "":
+        return {
+            "code": 400,
+            "message": "缺少终端唯一标识符 uuid",
+            "data": None
+        }
     return register_terminal(data)
+
+# 终端信息更新接口
+@router.post("/update")
+def api_update_terminal(data: TerminalUpdateRequest):
+    return update_terminal_info(data)
 
 @router.post("/status")
 def api_terminal_status(data: TerminalStatusUpdate):
