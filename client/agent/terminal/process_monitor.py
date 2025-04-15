@@ -1,13 +1,17 @@
+import ctypes
+import getpass
+from ctypes import wintypes
+
 import psutil
 import time
 import requests
 from datetime import datetime
 import os
-import win32api
 from client.agent.terminal.register import get_terminal_id
 from client.config import config
 
 terminal_id = get_terminal_id()
+terminal_user = getpass.getuser().lower()
 report_url = config.server_url.rstrip("/") + "/client/process-report"
 
 # 获取进程描述信息
@@ -15,9 +19,30 @@ def get_process_description(exe_path: str) -> str:
     try:
         if not exe_path or not os.path.exists(exe_path):
             return ""
-        info = win32api.GetFileVersionInfo(exe_path, "\\")  # type: ignore
-        desc = win32api.VerQueryValue(info, 'StringFileInfo\\040904b0\\FileDescription')  # type: ignore
-        return desc
+
+        size = ctypes.windll.version.GetFileVersionInfoSizeW(exe_path, None)
+        if not size:
+            return ""
+
+        res = ctypes.create_string_buffer(size)
+        ctypes.windll.version.GetFileVersionInfoW(exe_path, 0, size, res)
+
+        lpdw_translate = ctypes.c_void_p()
+        pu_len = ctypes.c_uint()
+        ctypes.windll.version.VerQueryValueW(res, r"\VarFileInfo\Translation",
+                                             ctypes.byref(lpdw_translate),
+                                             ctypes.byref(pu_len))
+
+        lang, codepage = ctypes.cast(lpdw_translate, ctypes.POINTER(wintypes.WORD * 2)).contents
+        sub_block = f"\\StringFileInfo\\{lang:04x}{codepage:04x}\\FileDescription"
+
+        lp_buffer = ctypes.c_wchar_p()
+        pu_len = ctypes.c_uint()
+        if ctypes.windll.version.VerQueryValueW(res, sub_block,
+                                                ctypes.byref(lp_buffer),
+                                                ctypes.byref(pu_len)):
+            return lp_buffer.value.strip()
+        return ""
     except Exception:
         return ""
 
@@ -37,10 +62,8 @@ def get_network_info(p: psutil.Process) -> tuple:
 # 判断是否为用户进程
 def is_user_process(p: psutil.Process) -> bool:
     try:
-        username = p.username()
-        if not username or username.lower() in ["system", "local service", "network service"]:
-            return False
-        return True
+        username = p.username().split("\\")[-1].lower()
+        return username == terminal_user
     except:
         return False
 
@@ -57,7 +80,7 @@ def collect_process_info():
 
             process = {
                 "terminal_id": terminal_id,
-                "username": p.username(),
+                "username": terminal_user,
                 "process_name": p.name(),
                 "pid": p.pid,
                 "status": 1 if p.status() == psutil.STATUS_RUNNING else 0,
