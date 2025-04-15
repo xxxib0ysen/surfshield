@@ -1,6 +1,10 @@
 import pymysql
+import redis
+
 from utils.config import Config
 
+
+# mysql
 def create_connection():
     try:
         conn = pymysql.connect(
@@ -15,3 +19,7 @@ def create_connection():
     except pymysql.MySQLError as e:
         print(f"数据库连接失败: {str(e)}")
         raise
+
+
+# redis
+redis_client = redis.StrictRedis(host='localhost', port=6379, db=0, decode_responses=True)

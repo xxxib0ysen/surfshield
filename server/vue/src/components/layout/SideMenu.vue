@@ -57,12 +57,19 @@
         </el-menu-item-group>
       </el-sub-menu>
 
-      <el-menu-item index="/remote">
-        <el-icon>
-          <VideoPlay />
-        </el-icon>
-        <span>实时管控</span>
-      </el-menu-item>
+      <el-sub-menu index="/monitor">
+        <template #title>
+          <el-icon><VideoPlay /></el-icon>
+          <span>实时管控</span>
+        </template>
+        <el-menu-item-group>
+          <el-menu-item index="/monitor/process_monitor">
+            <el-icon><Timer /></el-icon>
+            <span>进程管控</span>
+          </el-menu-item>
+        </el-menu-item-group>
+      </el-sub-menu>
+
       <el-menu-item index="/log">
         <el-icon>
           <Document />

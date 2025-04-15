@@ -15,6 +15,16 @@ from client.config import config
 # 本地存储终端 ID
 terminal_id_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "terminal_id.txt")
 
+# 从本地文件读取终端 ID
+def get_terminal_id():
+    try:
+        if os.path.exists(terminal_id_file):
+            with open(terminal_id_file, "r", encoding="utf-8") as f:
+                return int(f.read().strip())
+    except Exception as e:
+        print(f"[终端ID] 读取失败: {e}")
+    return None
+
 # 获取当前用户名
 def get_username():
     return getuser()
