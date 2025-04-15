@@ -286,12 +286,12 @@ def update_terminal_status(terminal_id: int, status: int):
         cursor = conn.cursor()
 
         if status == 1:
-            # 在线：更新 last_login
-            sql = "update sys_terminal set status = %s, last_login = now() where id = %s"
+            # 在线
+            sql = "update sys_terminal set status = %s, last_login = now(),  last_heartbeat = now() where id = %s"
             cursor.execute(sql, (status, terminal_id))
         else:
-            # 离线：不更新 last_login，只修改状态
-            sql = "update sys_terminal set status = %s where id = %s"
+            # 离线
+            sql = "update sys_terminal set status = %s, last_heartbeat = now() where id = %s"
             cursor.execute(sql, (status, terminal_id))
 
         conn.commit()

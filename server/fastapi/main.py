@@ -5,11 +5,20 @@ from routers import login, client
 from routers.control import website_control, process_control
 from routers.terminal_admin import admin, role, perm, group, terminal
 from utils.auth import get_current_user
+from utils.task.terminal_cleanup import init_scheduler, scheduler
 
 app = FastAPI(
     title="用户上网行为管控平台",
     version="1.0.0"
 )
+
+# 定时在线/离线
+@app.on_event("startup")
+def startup_event():
+    init_scheduler()
+@app.on_event("shutdown")
+def shutdown_event():
+    scheduler.shutdown()
 
 # 允许跨域（默认允许全部）
 app.add_middleware(
