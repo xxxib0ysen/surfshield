@@ -2,18 +2,17 @@ import sys
 import os
 
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
-
-from client.agent.terminal.process_monitor import start_process_report_loop, listen_for_commands
-from client.agent.terminal.register import report_terminal_status, startup_routine
 import atexit
 import signal
 import time
+from client.agent.terminal.process_monitor import start_process_report_loop, listen_for_commands
+from client.agent.terminal.register import report_terminal_status, startup_routine
 from threading import Thread
-
 from agent.control.intercept import start_network_intercept
 from agent.control.rule_sync import sync_rules
 from agent.control.process_control import run_process_guard
 from config import config
+from client.agent.terminal.behavior import start_behavior_capture
 
 
 # 确保日志目录存在
@@ -22,18 +21,22 @@ def ensure_log_dir():
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
+
 # 规则同步线程
 def start_rule_sync_loop():
     def loop():
         while True:
             sync_rules()
             time.sleep(config.sync_interval_minutes * 60)
+
     thread = Thread(target=loop, daemon=True)
     thread.start()
+
 
 # 进程控制线程
 def start_process_guard_loop():
     Thread(target=run_process_guard, daemon=True).start()
+
 
 # 心跳线程（每 30 秒上报一次在线）
 def start_heartbeat_loop():
@@ -44,19 +47,24 @@ def start_heartbeat_loop():
             except Exception as e:
                 print(f"[上报异常] {e}")
             time.sleep(30)
+
     Thread(target=heartbeat_loop, daemon=True).start()
+
 
 # 退出上报离线状态
 def on_exit():
     report_terminal_status(0)
 
+
 # 进程采集上报线程
 def start_process_report_loop_thread():
     Thread(target=start_process_report_loop, daemon=True).start()
 
+
 # 终止进程监听
 def start_command_listener():
     Thread(target=listen_for_commands, daemon=True).start()
+
 
 def main():
     print("客户端启动中...")
@@ -81,6 +89,8 @@ def main():
     start_process_report_loop_thread()
     # 终止进程
     start_command_listener()
+    # 启动行为采集线程
+    start_behavior_capture()
 
     try:
         while True:
