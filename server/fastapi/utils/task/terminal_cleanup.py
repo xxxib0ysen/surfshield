@@ -23,21 +23,27 @@ def mark_inactive_terminals():
         if not offline_terminals:
             return
 
-        # 获取 id 列表
+        # 获取 ID 列表
         terminal_ids = [row["id"] for row in offline_terminals]
 
-        # 更新终端状态为离线
+        # 更新状态为离线
         placeholders = ','.join(['%s'] * len(terminal_ids))
         sql = f"update sys_terminal set status = 0 where id in ({placeholders})"
         cursor.execute(sql, terminal_ids)
         conn.commit()
 
-        # 清除 Redis 中缓存的进程数据
-        for row in offline_terminals:
-            terminal_id = row["id"]
-            redis_key = f"terminal:process:{terminal_id}"
-            redis_client.delete(redis_key)
-            print(f"已清除 Redis 缓存: {redis_key}")
+        # 清理 Redis 缓存（进程 + 行为记录）
+        for tid in terminal_ids:
+            keys = [
+                f"terminal:process:{tid}",          # 进程缓存
+                f"behavior:web:{tid}",              # 网站访问记录
+                f"behavior:search:{tid}"            # 搜索关键词记录
+            ]
+            for key in keys:
+                redis_client.delete(key)
+                print(f"[缓存清理] 已删除 Redis 键：{key}")
+
+        print(f"[离线处理] 已处理终端 ID：{terminal_ids}")
 
     except Exception as e:
         print(f"离线终端处理失败: {e}")

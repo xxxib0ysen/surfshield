@@ -67,6 +67,10 @@
             <el-icon><Timer /></el-icon>
             <span>进程管控</span>
           </el-menu-item>
+          <el-menu-item index="/monitor/behavior">
+            <el-icon><Timer /></el-icon>
+            <span>行为管控</span>
+          </el-menu-item>
         </el-menu-item-group>
       </el-sub-menu>
 

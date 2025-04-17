@@ -11,6 +11,7 @@ import requests
 from getpass import getuser
 
 from client.config import config
+from client.config.config import redis_client
 
 # 本地存储终端 ID
 terminal_id_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "terminal_id.txt")
@@ -183,6 +184,11 @@ def report_terminal_status(status: int):
         print(result.get("message"))
         print(f"[上报] terminal_id: {terminal_id}, status: {status}")
         print(f"[上报响应] {result}")
+        if status == 1:
+            redis_client.set(f"terminal:heartbeat:{terminal_id}", "1", ex=90)
+        else:
+            redis_client.delete(f"terminal:heartbeat:{terminal_id}")
+
     except Exception as e:
         print(f"[异常] 上报状态失败: {e}")
 
