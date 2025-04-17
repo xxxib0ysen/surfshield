@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routers import login, client
 from routers.control import website_control, process_control
-from routers.monitor import process_monitor
+from routers.monitor import process_monitor, behavior
 from routers.terminal_admin import admin, role, perm, group, terminal
 from utils.auth import get_current_user
 from utils.task.terminal_cleanup import init_scheduler, scheduler
@@ -39,4 +39,5 @@ app.include_router(perm.router,prefix="/permission", tags=["权限管理"],depen
 app.include_router(group.router,prefix="/group",tags=["分组管理"],dependencies=[Depends(get_current_user)])
 app.include_router(terminal.router, prefix="/terminal",tags=["终端管理"],dependencies=[Depends(get_current_user)])
 app.include_router(process_monitor.router, prefix="/monitor",tags=["进程管控"],dependencies=[Depends(get_current_user)])
+app.include_router(behavior.router, prefix="/behavior", tags=["行为记录"],dependencies=[Depends(get_current_user)])
 app.include_router(client.router, prefix="/client",tags=["客户端无需拦截的路由"])

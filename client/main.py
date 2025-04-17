@@ -7,12 +7,12 @@ import signal
 import time
 from client.agent.terminal.process_monitor import start_process_report_loop, listen_for_commands
 from client.agent.terminal.register import report_terminal_status, startup_routine
+from client.agent.terminal.behavior import start_behavior_capture
 from threading import Thread
 from agent.control.intercept import start_network_intercept
 from agent.control.rule_sync import sync_rules
 from agent.control.process_control import run_process_guard
 from config import config
-from client.agent.terminal.behavior import start_behavior_capture
 
 
 # 确保日志目录存在

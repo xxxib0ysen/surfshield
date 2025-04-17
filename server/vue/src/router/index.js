@@ -95,6 +95,12 @@ const router = createRouter({
           meta: { requiresAuth: true }
         },
         {
+          path: '/monitor/behavior',
+          name: 'Behavior',
+          component: () => import('@/views/monitor/Behavior.vue'),
+          meta: { requiresAuth: true }
+        },
+        {
           path: '/403',
           component: () => import('@/views/403.vue'),
           meta: { title: '无权限' }

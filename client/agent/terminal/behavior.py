@@ -1,126 +1,128 @@
 import json
-
-import time
+from threading import Thread
+from time import time,sleep
 from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 
-import win32gui
-import win32process
-import psutil
-from threading import Thread
-import re
+from client.agent.terminal.browser_parser import extract_all_browser_history
 from client.agent.terminal.register import get_terminal_id
 from client.config.config import redis_client
 
+# 获取当前终端 ID
 terminal_id = get_terminal_id()
 
+last_ts = (time() + 11644473600) * 1_000_000
 
-# 获取当前浏览器窗口标题
-def get_active_browser_title():
+
+# 写入网页访问记录到 Redis
+def record_web_visit(record):
     try:
-        hwnd = win32gui.GetForegroundWindow()
-        _, pid = win32process.GetWindowThreadProcessId(hwnd)
-        proc = psutil.Process(pid)
-        browser_names = ['chrome', 'msedge', 'firefox']
-
-        if any(b in proc.name().lower() for b in browser_names):
-            title = win32gui.GetWindowText(hwnd)
-            return title.strip()
-    except Exception as e:
-        print(f"[行为采集] 获取浏览器窗口标题失败: {e}")
-    return None
-
-
-# 记录网站访问行为
-def record_website_visit(url: str):
-    try:
-        title = get_active_browser_title() or urlparse(url).netloc
-        data = {
-            "terminal_id": terminal_id,
-            "title": title,
-            "url": url,
-            "visit_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
         key = f"behavior:web:{terminal_id}"
-        redis_client.lpush(key, json.dumps(data))
+
+        # 写入 Redis 列表，最多保留 20 条
+        redis_client.lpush(key, json.dumps({
+            "terminal_id": terminal_id,
+            "title": record["title"],
+            "url": record["url"],
+            "visit_time": record["visit_time"],
+            "browser": record["browser"]
+        }))
         redis_client.ltrim(key, 0, 19)
-        print(f"[记录网页访问] 网站名称: {title} | 网址: {url} | 时间: {data['visit_time']}")
+
+        print(f"[访问记录] {record['browser']} | {record['title']} | {record['url']}")
+
     except Exception as e:
-        print(f"[行为采集] 记录网页访问失败: {e}")
+        print(f"[记录网页访问异常] {e}")
 
+# 判断 URL 是否属于搜索引擎
+def is_search_engine(url):
+    try:
+        netloc = urlparse(url).netloc.lower()
 
-# 提取关键词参数
-def extract_search_keyword(url: str):
+        parts = netloc.split(".")
+        if len(parts) >= 2:
+            domain = ".".join(parts[-2:])
+        else:
+            domain = netloc
+
+        known_engines = [
+            "baidu.com", "google.com", "bing.com", "so.com",
+            "sogou.com", "yahoo.com", "yahoo.com.cn",
+        ]
+
+        return domain in known_engines
+    except Exception:
+        return False
+
+# 从 URL 中提取关键词参数
+def extract_keyword(url):
     try:
         parsed = urlparse(url)
         query = parse_qs(parsed.query)
-        for param in ['q', 'wd', 'query', 'keyword']:
-            if param in query:
-                return query[param][0]
-    except Exception as e:
-        print(f"[行为采集] 提取搜索关键词失败: {e}")
+
+        for key in ["q", "wd", "query", "keyword", "p", "text"]:
+            if key in query:
+                return query[key][0]
+    except:
+        pass
     return None
 
-
-# 记录搜索关键词行为
-def record_search_behavior(url: str):
+# 写入搜索关键词记录到 Redis
+def record_search_behavior(record):
     try:
-        keyword = extract_search_keyword(url)
+        # 仅处理搜索引擎页面
+        if not is_search_engine(record["url"]):
+            return
+
+        keyword = extract_keyword(record["url"])
         if not keyword:
             return
 
-        engine = urlparse(url).netloc
-        data = {
-            "terminal_id": terminal_id,
-            "search_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "engine": engine,
-            "keyword": keyword
-        }
         key = f"behavior:search:{terminal_id}"
-        redis_client.lpush(key, json.dumps(data))
+        redis_client.lpush(key, json.dumps({
+            "terminal_id": terminal_id,
+            "search_time": record["visit_time"],
+            "engine": urlparse(record["url"]).netloc,
+            "keyword": keyword
+        }))
         redis_client.ltrim(key, 0, 19)
-        print(f"[记录搜索行为] 关键词: {keyword} | 搜索引擎: {engine} | 时间: {data['search_time']}")
+
+        print(f"[搜索记录] {keyword} | {record['url']}")
 
     except Exception as e:
-        print(f"[行为采集] 记录搜索失败: {e}")
+        print(f"[记录搜索行为异常] {e}")
+
+# 行为采集循环线程
+def behavior_loop():
+    global last_ts
+
+    while True:
+        try:
+            # 提取所有浏览器中的新增历史记录
+            records = extract_all_browser_history(last_ts)
+
+            if not records:
+                sleep(10)
+                continue
+
+            for record in records:
+                timestamp = record["timestamp"]
+                # 记录最新时间戳
+                if timestamp > last_ts:
+                    last_ts = timestamp
+
+                # 写入网页访问记录
+                record_web_visit(record)
+
+                # 判断是否为搜索行为
+                record_search_behavior(record)
+
+        except Exception as e:
+            print(f"[行为采集异常] {e}")
+
+        sleep(10)
 
 
-# 抓包记录网页访问与搜索行为
 def start_behavior_capture():
-    try:
-        from pydivert import WinDivert
-
-        def capture_loop():
-            print("[行为采集] 网络行为监听已启动...")
-            try:
-                with WinDivert("outbound and tcp.DstPort == 80 or tcp.DstPort == 443") as w:
-                    for packet in w:
-                        try:
-                            url = None
-
-                            # HTTP 请求，获取 Host
-                            if hasattr(packet, "http") and packet.http.host:
-                                host = packet.http.host
-                                if re.match(r"^([a-zA-Z0-9\-]+\.)+[a-zA-Z]{2,}$", host):
-                                    url = f"http://{host}"
-
-                            # HTTPS 请求，获取 SNI
-                            elif hasattr(packet, "sni"):
-                                sni = packet.sni
-                                if re.match(r"^([a-zA-Z0-9\-]+\.)+[a-zA-Z]{2,}$", sni):
-                                    url = f"https://{sni}"
-
-                            if url:
-                                record_website_visit(url)
-                                record_search_behavior(url)
-
-                        except Exception as inner:
-                            print(f"[行为采集异常] 单个包处理失败: {inner}")
-
-            except Exception as e:
-                print(f"[行为采集启动失败] {e}")
-
-        Thread(target=capture_loop, daemon=True).start()
-
-    except ImportError:
-        print("[行为采集] 缺少 pydivert，请确保已安装驱动及依赖。")
+    print("[行为采集] 启动成功，开始周期性轮询浏览器历史记录")
+    Thread(target=behavior_loop, daemon=True).start()
