@@ -3,6 +3,7 @@ from datetime import datetime
 
 from utils.common import format_time_in_rows
 from utils.connect import create_connection
+from utils.log.log_decorator import log_operation, get_target_name
 from utils.response import error_response, success_response
 from utils.security import hash_password, verify_password
 from utils.status_code import HTTP_CONFLICT, HTTP_BAD_REQUEST, HTTP_NOT_FOUND, HTTP_UNAUTHORIZED, \
@@ -11,6 +12,7 @@ from utils.status_code import HTTP_CONFLICT, HTTP_BAD_REQUEST, HTTP_NOT_FOUND, H
 default_pwd = "surfshield"
 
 # 查询管理员分页列表
+@log_operation(module="用户列表", action="admin:list", is_query=True,template="{operator} 查询了用户列表")
 def get_admin_list(page: int, size: int):
     offset = (page - 1) * size
     conn = create_connection()
@@ -33,6 +35,7 @@ def get_admin_list(page: int, size: int):
         conn.close()
 
 # 新增管理员（默认禁用，默认密码）
+@log_operation(module="用户列表", action="admin:add", template="{operator} 新增了用户 {admin}")
 def add_admin(admin_name: str, role_id: int, description: str, status: int ):
     conn = create_connection()
     try:
@@ -58,7 +61,8 @@ def add_admin(admin_name: str, role_id: int, description: str, status: int ):
         conn.close()
 
 # 更新管理员角色与说明
-def update_admin(admin_id: int, role_id: int, description: str ):
+@log_operation(module="用户列表", action="admin:edit", template="{operator} 编辑了 {admin}")
+def update_admin(admin_id: int, role_id: int, description: str):
     conn = create_connection()
     try:
         with conn.cursor() as cursor:
@@ -78,6 +82,7 @@ def update_admin(admin_id: int, role_id: int, description: str ):
         conn.close()
 
 # 修改管理员状态（启用/禁用）
+@log_operation(module="用户列表", action="admin:disable",template="{operator} 将 {admin} 状态更改为 {status_text}")
 def update_admin_status(admin_id: int, status: int):
     conn = create_connection()
     try:
@@ -89,11 +94,17 @@ def update_admin_status(admin_id: int, status: int):
             sql = "update sys_admin set status = %s where admin_id = %s"
             cursor.execute(sql, (status, admin_id))
         conn.commit()
-        return success_response(message="状态更新成功")
+        status_text = "启用" if status == 1 else "禁用"
+        return success_response(
+            message="状态更新成功",
+            data={"description": status_text}
+
+        )
     finally:
         conn.close()
 
 # 修改密码
+@log_operation(module="用户列表", action="admin:change_password", template="{operator} 修改了自身密码")
 def change_password(admin_id: int, old_password: str, new_password: str):
     # 密码强度校验：6-12位，包含大小写字母和数字
     if not re.fullmatch(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{6,12}$', new_password):
@@ -119,6 +130,7 @@ def change_password(admin_id: int, old_password: str, new_password: str):
         conn.close()
 
 # 重置管理员密码为默认
+@log_operation(module="用户列表", action="admin:reset", template="{operator} 对 {admin} 执行了密码重置")
 def reset_admin_password(admin_id: int):
     conn = create_connection()
     try:
@@ -139,6 +151,7 @@ def reset_admin_password(admin_id: int):
         conn.close()
 
 # 删除管理员
+@log_operation(module="用户列表", action="admin:delete",template="{operator} 删除了用户 {admin}")
 def delete_admin(admin_id: int):
     conn = create_connection()
     try:
