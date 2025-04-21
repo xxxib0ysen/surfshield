@@ -101,6 +101,16 @@ const router = createRouter({
           meta: { requiresAuth: true }
         },
         {
+          path: '/log/behavior',
+          name: 'BehaviorLog',
+          component: () => import('@/views/log/Log.vue'),
+        },
+        {
+          path: '/log/operation',
+          name: 'operation',
+          component: () => import('@/views/log/OperationLog.vue'),
+        },
+        {
           path: '/403',
           component: () => import('@/views/403.vue'),
           meta: { title: '无权限' }

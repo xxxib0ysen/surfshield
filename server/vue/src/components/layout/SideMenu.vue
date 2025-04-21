@@ -74,12 +74,23 @@
         </el-menu-item-group>
       </el-sub-menu>
 
-      <el-menu-item index="/log">
-        <el-icon>
-          <Document />
-        </el-icon>
-        <span>日志分析</span>
-      </el-menu-item>
+      <el-sub-menu index="/log">
+        <template #title>
+          <el-icon><Document /></el-icon>
+          <span>日志分析</span>
+        </template>
+        <el-menu-item-group>
+          <el-menu-item index="/log/behavior">
+            <el-icon><Memo /></el-icon>
+            <span>终端管控日志</span>
+          </el-menu-item>
+          <el-menu-item index="/log/operation">
+            <el-icon><Notebook /></el-icon>
+            <span>系统操作日志</span>
+          </el-menu-item>
+        </el-menu-item-group>
+      </el-sub-menu>
+
     </el-menu>
   </el-aside>
 </template>

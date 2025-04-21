@@ -6,23 +6,28 @@ from model.terminal_admin.terminal_model import TerminalQuery, TerminalMoveGroup
     OSDistributionItem
 from service.terminal_admin.terminal_service import get_terminal_list, get_terminal_detail, move_terminal_to_group, \
     get_terminal_columns, get_terminal_status_count, get_terminal_os_distribution
+from utils.check_perm import check_permission
+from utils.log.log_context import log_context_dependency
 
 router = APIRouter()
 
 # 查询终端列表
 @router.get("/list")
-def api_get_terminal_list(query: TerminalQuery = Depends(), group_id: Optional[str] = Query(None)):
+def api_get_terminal_list(query: TerminalQuery = Depends(), group_id: Optional[str] = Query(None),
+                          _=Depends(log_context_dependency), _p=Depends(check_permission("terminal:list"))):
     group_ids = [int(i) for i in group_id.split(",")] if group_id else None
     return get_terminal_list(query, group_id)
 
 # 获取终端详情
 @router.get("/detail/{terminal_id}")
-def api_get_terminal_detail(terminal_id: int):
+def api_get_terminal_detail(terminal_id: int, _=Depends(log_context_dependency),
+    _p=Depends(check_permission("terminal:detail"))):
     return get_terminal_detail(terminal_id)
 
 # 批量移动终端到分组
 @router.post("/move_group")
-def api_move_terminal_to_group(data: TerminalMoveGroup):
+def api_move_terminal_to_group(data: TerminalMoveGroup, _=Depends(log_context_dependency),
+    _p=Depends(check_permission("terminal:move"))):
     return move_terminal_to_group(data)
 
 # 自定义列

@@ -1,5 +1,6 @@
 from utils.common import format_time_fields, format_time_in_rows
 from utils.connect import create_connection
+from utils.log.log_decorator import log_operation
 from utils.response import success_response, error_response
 from model.terminal_admin.group_model import GroupCreateUpdate
 from datetime import datetime
@@ -16,6 +17,7 @@ def get_all_descendant_ids(group_id, all_groups):
     return ids
 
 # 获取分组树结构
+@log_operation(module="组织架构", action="group:tree", is_query=True, template="{operator} 查询了组织架构")
 def get_group_tree_service():
     try:
         conn = create_connection()
@@ -40,6 +42,7 @@ def get_group_tree_service():
         return error_response(message=f"获取分组失败：{str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)
 
 # 新增分组
+@log_operation(module="组织架构", action="group:add", template="{operator} 新增了分组 {group}")
 def add_group_service(group: GroupCreateUpdate):
     try:
         conn = create_connection()
@@ -59,6 +62,7 @@ def add_group_service(group: GroupCreateUpdate):
 
 
 # 编辑分组
+@log_operation(module="组织架构", action="group:edit", template="{operator} 编辑了分组 {group}")
 def update_group_service(group_id: int, group: GroupCreateUpdate):
     try:
         conn = create_connection()
@@ -92,6 +96,7 @@ def update_group_service(group_id: int, group: GroupCreateUpdate):
 
 
 # 删除分组及其子分组和终端
+@log_operation(module="组织架构", action="group:delete", template="{operator} 删除了分组 {group}")
 def delete_group_service(group_id: int):
     try:
         conn = create_connection()

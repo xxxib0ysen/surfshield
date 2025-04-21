@@ -1,4 +1,5 @@
 from utils.connect import create_connection
+from utils.log.log_decorator import log_operation
 from utils.response import success_response, error_response
 from utils.status_code import *
 
@@ -52,6 +53,7 @@ def get_permission_ids_by_role(role_id: int):
         return error_response(message=f"查询角色权限失败: {str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)
 
 # 更新角色权限
+@log_operation(module="角色权限列表", action="role:bind_permission", template="{operator} 更新了角色 {role} 的权限绑定")
 def update_role_permissions(role_id: int, perm_ids: list):
     try:
         conn = create_connection()

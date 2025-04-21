@@ -1,10 +1,12 @@
 from utils.connect import create_connection
+from utils.log.log_decorator import log_operation
 from utils.response import success_response, error_response
 from utils.status_code import *
 from utils.common import is_valid_process_keyword, format_time_in_rows
 from datetime import datetime
 
 # 添加单个进程
+@log_operation(module="进程黑名单", action="process_rule:add", template="{operator} 添加了进程黑名单： {process_name}")
 def add_single_process(process_name: str, status: int ):
     process_name = process_name.strip().lower()
     if not process_name:
@@ -20,7 +22,7 @@ def add_single_process(process_name: str, status: int ):
         sql = "insert into process_control (process_name, status, create_time) values (%s, %s, %s)"
         cursor.execute(sql, (process_name, status, now))
         conn.commit()
-        return success_response(message="添加成功")
+        return success_response(message="添加成功", data={"description": f"添加了进程黑名单 {process_name}"})
     except Exception as e:
         return error_response("数据库操作失败", HTTP_INTERNAL_SERVER_ERROR, str(e))
     finally:
@@ -28,6 +30,7 @@ def add_single_process(process_name: str, status: int ):
         conn.close()
 
 # 批量添加
+@log_operation(module="进程黑名单", action="process_rule:add", template="{operator} 批量添加了进程黑名单 {process_list}")
 def add_batch_process(process_list: list, status: int):
     if not isinstance(process_list, list):
         return error_response("进程列表格式错误，应为数组", HTTP_BAD_REQUEST)
@@ -49,7 +52,7 @@ def add_batch_process(process_list: list, status: int):
         values = [(name, status, now) for name in cleaned]
         cursor.executemany(sql, values)
         conn.commit()
-        return success_response(message="批量添加成功", data={"新增数量": len(values)})
+        return success_response(message="批量添加成功", data={"新增数量": len(values), "process_list": cleaned})
     except Exception as e:
         return error_response("数据库操作失败", HTTP_INTERNAL_SERVER_ERROR, str(e))
     finally:
@@ -58,6 +61,7 @@ def add_batch_process(process_list: list, status: int):
 
 
 # 删除单个
+@log_operation(module="进程黑名单", action="process_rule:delete", template="{operator} 删除了进程黑名单{rule_name}")
 def delete_single_process(rule_id: int):
     if not isinstance(rule_id, int) or rule_id <= 0:
         return error_response("无效的规则 ID", HTTP_BAD_REQUEST)
@@ -65,12 +69,19 @@ def delete_single_process(rule_id: int):
     try:
         conn = create_connection()
         cursor = conn.cursor()
+
+        cursor.execute("select process_name from process_control where id = %s", (rule_id,))
+        row = cursor.fetchone()
+        if not row:
+            return error_response("规则不存在或已删除", HTTP_NOT_FOUND)
+
+        rule_name = row["process_name"]
+
         sql = "delete from process_control where id = %s"
         cursor.execute(sql, (rule_id,))
         conn.commit()
-        if cursor.rowcount == 0:
-            return error_response("规则不存在或已删除", HTTP_NOT_FOUND)
-        return success_response(message="删除成功")
+
+        return success_response(message="删除成功", data={"description": rule_name})
     except Exception as e:
         return error_response("数据库删除失败", HTTP_INTERNAL_SERVER_ERROR, str(e))
     finally:
@@ -79,6 +90,7 @@ def delete_single_process(rule_id: int):
 
 
 # 批量删除
+@log_operation(module="进程黑名单", action="process_rule:delete", template="{operator} 批量删除了进程黑名单：{rule_names}")
 def delete_batch_process(ids: list):
     if not isinstance(ids, list) or not all(isinstance(i, int) and i > 0 for i in ids):
         return error_response("ID 列表格式错误", HTTP_BAD_REQUEST)
@@ -86,10 +98,15 @@ def delete_batch_process(ids: list):
     try:
         conn = create_connection()
         cursor = conn.cursor()
-        sql = "delete from process_control where id in (%s)" % ','.join(['%s'] * len(ids))
+
+        cursor.execute("select process_name from process_control where id in (%s)" % ','.join(['%s'] * len(ids)), ids)
+        rows = cursor.fetchall()
+        names = [row["process_name"] for row in rows]
+
+        sql = "delete from process_control where id in (%s)" % ','.join(['%s'] * len(ids), )
         cursor.execute(sql, ids)
         conn.commit()
-        return success_response(message="批量删除成功", data={"删除数量": cursor.rowcount})
+        return success_response(message="批量删除成功", data={"删除数量": cursor.rowcount, "description": "、".join(names[:5]) + (" 等" if len(names) > 5 else "")})
     except Exception as e:
         return error_response("数据库删除失败", HTTP_INTERNAL_SERVER_ERROR, str(e))
     finally:
@@ -98,6 +115,7 @@ def delete_batch_process(ids: list):
 
 
 # 启用/禁用
+@log_operation(module="进程黑名单", action="process_rule:toggle", template="{operator} 修改了进程黑名单 {rule_id} 的状态")
 def toggle_process_status(rule_id: int, status: int ):
     if not isinstance(rule_id, int) or rule_id <= 0:
         return error_response("无效的规则 ID", HTTP_BAD_REQUEST)
@@ -121,6 +139,7 @@ def toggle_process_status(rule_id: int, status: int ):
 
 
 # 获取进程列表
+@log_operation(module="进程黑名单", action="process_rule:list", is_query=True, template="{operator} 查询了进程黑名单列表")
 def get_process_list():
     try:
         conn = create_connection()

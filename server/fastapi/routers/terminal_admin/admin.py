@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from model.terminal_admin.admin_model import *
 from service.terminal_admin import admin_service
+from service.terminal_admin.admin_service import get_all_admin_names_service
 from utils.auth import get_current_user
 from utils.check_perm import check_permission
 from utils.log.log_context import log_context_dependency
@@ -17,6 +18,11 @@ def get_admin_list(
         page=query.page,
         size=query.size
     )
+
+# 获取名称
+@router.get("/list-name")
+def get_all_admin_names():
+    return get_all_admin_names_service()
 
 @router.post("/add", summary="新增管理员")
 def add_admin(

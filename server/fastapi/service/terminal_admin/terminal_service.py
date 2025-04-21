@@ -3,11 +3,13 @@ from typing import Optional, List
 
 from utils.common import format_time_fields
 from utils.connect import create_connection
+from utils.log.log_decorator import log_operation
 from utils.response import success_response, error_response
 from utils.status_code import HTTP_OK, HTTP_BAD_REQUEST, HTTP_INTERNAL_SERVER_ERROR
 from model.terminal_admin.terminal_model import TerminalQuery, TerminalMoveGroup
 
 # 查询终端列表
+@log_operation(module="终端列表", action="terminal:list", is_query=True, template="{operator} 查询了终端列表")
 def get_terminal_list(query: TerminalQuery, group_ids: Optional[List[int]] = None):
     try:
         conn = create_connection()
@@ -84,6 +86,7 @@ def get_terminal_list(query: TerminalQuery, group_ids: Optional[List[int]] = Non
 
 
 # 获取终端详情信息
+@log_operation(module="终端管理", action="terminal:detail", is_query=True, template="{operator} 查看了终端 {terminal} 的详情")
 def get_terminal_detail(terminal_id: int):
     try:
         conn = create_connection()
@@ -112,6 +115,7 @@ def get_terminal_detail(terminal_id: int):
 
 
 # 批量移动终端到指定分组
+@log_operation(module="终端管理", action="terminal:move", template="{operator} 将多个终端移动至其他分组")
 def move_terminal_to_group(data: TerminalMoveGroup):
     try:
         conn = create_connection()

@@ -1,18 +1,17 @@
-# 登录接口
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 
 from utils.auth import get_current_user, get_permission_codes
 from utils.connect import create_connection
+from utils.log.log import write_log
 from utils.security import verify_password
 from utils.jwt_token import create_access_token
-from datetime import timedelta
 
 router = APIRouter()
 
 # 登录接口，返回 JWT token
 @router.post("/login")
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), request: Request = None):
     try:
         conn = create_connection()
         cursor = conn.cursor()
@@ -55,6 +54,14 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
             "perms": perms
         }
         access_token = create_access_token(token_data)
+
+        write_log(
+            admin_id=user["admin_id"],
+            ip_address=request.client.host,
+            module="登录",
+            action="login",
+            detail={"description": f"{user['admin_name']} 登录成功"}
+        )
 
         return {"access_token": access_token, "token_type": "bearer", "permissions":perms}
 

@@ -3,10 +3,12 @@ from datetime import datetime
 from service.terminal_admin.perm_service import get_permission_ids_by_role, update_role_permissions
 from utils.common import format_time_fields
 from utils.connect import create_connection
+from utils.log.log_decorator import log_operation
 from utils.response import error_response, success_response
 from utils.status_code import HTTP_CONFLICT, HTTP_NOT_FOUND
 
 # 获取所有角色
+@log_operation(module="角色权限列表", action="role:list", is_query=True, template="{operator} 查询了角色列表")
 def get_all_roles():
     conn = create_connection()
     try:
@@ -24,6 +26,7 @@ def get_all_roles():
         conn.close()
 
 # 获取角色详情
+@log_operation(module="角色权限列表", action="role:list", is_query=True, template="{operator} 查看了角色 {role} 的详情")
 def get_role_detail(role_id: int):
     conn = create_connection()
     try:
@@ -48,6 +51,7 @@ def get_role_detail(role_id: int):
         conn.close()
 
 # 新增角色
+@log_operation(module="角色权限列表", action="role:add", template="{operator} 新增了角色 {role}")
 def add_role(role_name: str, description: str, permissions: list, status: int):
     conn = create_connection()
     try:
@@ -69,6 +73,7 @@ def add_role(role_name: str, description: str, permissions: list, status: int):
         conn.close()
 
 # 编辑角色
+@log_operation(module="角色权限列表", action="role:edit", template="{operator} 编辑了角色 {role}")
 def update_role(role_id: int, role_name: str, description: str, permissions: list):
     conn = create_connection()
     try:
@@ -92,6 +97,7 @@ def update_role(role_id: int, role_name: str, description: str, permissions: lis
         conn.close()
 
 # 修改角色状态（启用/禁用）
+@log_operation(module="角色权限列表", action="role:disable", template="{operator} 修改了角色 {role} 的状态")
 def update_role_status(role_id: int, status: int):
     conn = create_connection()
     try:
@@ -108,6 +114,7 @@ def update_role_status(role_id: int, status: int):
         conn.close()
 
 # 删除角色
+@log_operation(module="角色权限列表", action="role:delete", template="{operator} 删除了角色 {role}")
 def delete_role(role_id: int):
     conn = create_connection()
     try:

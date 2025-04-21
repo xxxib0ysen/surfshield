@@ -1,5 +1,6 @@
 import json
 from utils.connect import redis_client
+from utils.log.log_decorator import log_operation
 from utils.response import success_response, error_response
 from utils.status_code import HTTP_OK, HTTP_INTERNAL_SERVER_ERROR
 
@@ -13,6 +14,7 @@ def save_process_to_redis(terminal_id: int, process_list: list):
         return error_response(message=f"写入 Redis 失败: {str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)
 
 # 获取进程信息
+@log_operation(module="进程管控", action="process:list", is_query=True, template="{operator} 查询了终端进程信息")
 def get_process_from_redis(terminal_id: int = None):
     try:
         process_list = []
@@ -45,6 +47,7 @@ def get_process_from_redis(terminal_id: int = None):
         return error_response(message=f"获取进程数据失败：{str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)
 
 # 终止进程
+@log_operation(module="进程管控",action="process:kill",template="{operator} 终止了终端 {terminal} 的进程 PID={pid}")
 def send_kill_command(terminal_id: int, pid: int) -> bool:
     try:
         channel = f"terminal:cmd:{terminal_id}"

@@ -7,7 +7,7 @@ from utils.log.log_decorator import log_operation, get_target_name
 from utils.response import error_response, success_response
 from utils.security import hash_password, verify_password
 from utils.status_code import HTTP_CONFLICT, HTTP_BAD_REQUEST, HTTP_NOT_FOUND, HTTP_UNAUTHORIZED, \
-    HTTP_INTERNAL_SERVER_ERROR
+    HTTP_INTERNAL_SERVER_ERROR, HTTP_OK
 
 default_pwd = "surfshield"
 
@@ -33,6 +33,19 @@ def get_admin_list(page: int, size: int):
             return success_response(data={"total": total, "data": data})
     finally:
         conn.close()
+
+# 获取名称
+def get_all_admin_names_service():
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+        sql = "select admin_name from sys_admin where status != -1"
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        names = [row["admin_name"] for row in rows]
+        return success_response(data=names, code=HTTP_OK)
+    except Exception as e:
+        return error_response(message=f"获取管理员名称失败：{str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)
 
 # 新增管理员（默认禁用，默认密码）
 @log_operation(module="用户列表", action="admin:add", template="{operator} 新增了用户 {admin}")

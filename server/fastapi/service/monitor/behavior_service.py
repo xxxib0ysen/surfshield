@@ -2,6 +2,8 @@ import json
 from datetime import datetime
 from utils.connect import redis_client, create_connection
 from utils.common import format_time_in_rows
+from utils.log.log_decorator import log_operation
+
 
 # 根据用户名模糊查询（为空表示查询所有在线终端）
 def get_terminal_ids_by_username(username: str = None):
@@ -55,6 +57,7 @@ def map_terminal_ids_to_usernames(terminal_ids: list[str]) -> dict:
         return {}
 
 # 获取网页访问记录
+@log_operation(module="行为管控", action="behavior:web", is_query=True, template="{operator} 查询了网页访问记录")
 def get_web_behavior_service(username: str):
     result = []
 
@@ -77,6 +80,7 @@ def get_web_behavior_service(username: str):
     return result
 
 # 获取搜索关键词记录
+@log_operation(module="行为管控", action="behavior:search", is_query=True, template="{operator} 查询了搜索关键词记录")
 def get_search_behavior_service(username: str):
     result = []
 

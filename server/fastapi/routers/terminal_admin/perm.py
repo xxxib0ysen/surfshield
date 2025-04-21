@@ -4,6 +4,7 @@ from model.terminal_admin.perm_model import RolePermissionUpdate
 from service.terminal_admin.perm_service import get_all_permissions, get_permission_ids_by_role, \
     update_role_permissions, get_permissions_grouped_by_module
 from utils.check_perm import check_permission
+from utils.log.log_context import log_context_dependency
 
 router = APIRouter()
 
@@ -25,5 +26,6 @@ def get_grouped_permissions(_=Depends(check_permission("permission:list"))):
 
 # 绑定权限到角色
 @router.post("/bind")
-def bind_permissions(data: RolePermissionUpdate,_=Depends(check_permission("role:bind_permission"))):
+def bind_permissions(data: RolePermissionUpdate, _=Depends(log_context_dependency),
+                     _p=Depends(check_permission("role:bind_permission"))):
     return update_role_permissions(data.role_id, data.perm_ids)

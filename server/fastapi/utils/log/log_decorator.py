@@ -61,7 +61,10 @@ def log_operation(module: str, action: str, is_query: bool = False, template: st
                         if "description" in result.get("data", {}):
                             status_text = result["data"].get("description", "")
                             context_data["status_text"] = status_text
-
+                        if "process_list" in result.get("data", {}):
+                            context_data["process_list"] = "、".join(result["data"]["process_list"][:5])
+                        if "rule_names" in result.get("data", {}):
+                            context_data["rule_names"] = result["data"]["rule_names"]
                         detail["description"] = template.format(**context_data)
 
 

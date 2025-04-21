@@ -46,13 +46,3 @@ def list_grouped_rules():
 def report_process(data: ProcessReport):
     return save_process_to_redis(data.terminal_id, [item.dict() for item in data.process_list])
 
-@router.post("/kill_process", summary="远程终止终端进程")
-def kill_process(req: KillProcessRequest):
-    try:
-        success = send_kill_command(req.terminal_id, req.pid)
-        if success:
-            return success_response(message="终止进程指令已下发", code=HTTP_OK)
-        else:
-            return error_response(message="指令发送失败或终端不在线", code=HTTP_BAD_REQUEST)
-    except Exception as e:
-        return error_response(message=f"服务异常：{str(e)}", code=HTTP_BAD_REQUEST)
