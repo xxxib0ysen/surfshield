@@ -48,6 +48,20 @@ def mark_inactive_terminals():
     except Exception as e:
         print(f"离线终端处理失败: {e}")
 
+# 清理 7 天前系统操作日志
+def clear_expired_logs():
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+
+        sql = "delete from log_operation where created_at < now() - interval 7 day"
+        cursor.execute(sql)
+        conn.commit()
+
+        print("[日志清理] 已删除 7 天前的系统操作日志")
+    except Exception as e:
+        print(f"[日志清理失败] {e}")
+
 
 scheduler = BackgroundScheduler(
     jobstores={"default": MemoryJobStore()},
@@ -57,15 +71,23 @@ scheduler = BackgroundScheduler(
 )
 
 
-
 # 初始化定时任务
 def init_scheduler():
-    print("初始化定时任务：离线终端检测")
+    clear_expired_logs()
     scheduler.add_job(
         mark_inactive_terminals,
         trigger="interval",
         seconds=60,
         id="offline_terminal_check",
+        replace_existing=True
+    )
+
+    scheduler.add_job(
+        clear_expired_logs,
+        trigger="cron",
+        hour=0,
+        minute=0,
+        id="clear_expired_logs",
         replace_existing=True
     )
     scheduler.start()

@@ -9,6 +9,15 @@ export function getAdminList(params) {
   })
 }
 
+// 获取所有管理员名称
+export function getAdminNameList() {
+  return request({
+    url: '/admin/list-name',
+    method: 'get'
+  })
+}
+
+
 // 新增管理员
 export function addAdmin(data) {
   return request({
