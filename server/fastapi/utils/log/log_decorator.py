@@ -58,6 +58,8 @@ def log_operation(module: str, action: str, is_query: bool = False, template: st
                                 target_id = kwargs.get(id_field)
                                 context_data[key] = get_target_name(table, field, id_field, target_id)
 
+                        if "{admin}" in template and "admin" not in context_data:
+                            context_data["admin"] = result.get("data", {}).get("target_name")
                         if "description" in result.get("data", {}):
                             status_text = result["data"].get("description", "")
                             context_data["status_text"] = status_text

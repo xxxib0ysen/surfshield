@@ -169,13 +169,20 @@ def delete_admin(admin_id: int):
     conn = create_connection()
     try:
         with conn.cursor() as cursor:
-            cursor.execute("select 1 from sys_admin where admin_id = %s", (admin_id,))
-            if not cursor.fetchone():
+            cursor.execute("select admin_name from sys_admin where admin_id = %s", (admin_id,))
+            row = cursor.fetchone()
+            if not row:
                 return error_response("管理员不存在", code=HTTP_NOT_FOUND)
 
-            sql = "delete from sys_admin where admin_id = %s"
-            cursor.execute(sql, (admin_id,))
+            admin_name = row["admin_name"]
+
+            # 删除管理员自身记录
+            cursor.execute("delete from sys_admin where admin_id = %s", (admin_id,))
+
+            # 级联删除其相关操作日志
+            cursor.execute("delete from log_operation where admin_id = %s", (admin_id,))
+
         conn.commit()
-        return success_response(message="管理员删除成功")
+        return success_response(message="管理员及相关日志删除成功", data={"target_name": admin_name})
     finally:
         conn.close()
