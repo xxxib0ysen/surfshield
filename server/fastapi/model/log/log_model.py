@@ -12,6 +12,15 @@ class OperationLogQuery(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
 
+class BehaviorLogQuery(BaseModel):
+    page: int = Field(1)
+    page_size: int = Field(10)
+    username: Optional[str] = None
+    behavior_type: Optional[str] = None
+    group_id: Optional[int] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    group_ids: Optional[List[int]] = None
 
 # 日志记录单条返回模型
 class OperationLogItem(BaseModel):
@@ -24,6 +33,13 @@ class OperationLogItem(BaseModel):
     action: str
     detail: str
 
+class BehaviorLogItem(BaseModel):
+    id: int
+    event_time: str
+    username: Optional[str] = None
+    ip_address: str
+    behavior_type: str
+    detail: str
 
 # 分页返回模型
 class OperationLogListPayload(BaseModel):
@@ -34,3 +50,7 @@ class OperationLogListResponse(BaseModel):
     code: int
     message: str
     data: OperationLogListPayload
+
+class BehaviorLogListPayload(BaseModel):
+    total: int  # 总条数
+    list: List[BehaviorLogItem]

@@ -337,3 +337,20 @@ def get_terminal_os_distribution():
         return rows
     except Exception as e:
         return error_response(message=f"获取操作系统分布失败：{str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)
+
+# 获取所有终端用户名
+def get_username_list():
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+        sql = """
+            select distinct username
+            from sys_terminal
+            where username is not null and username != ''
+        """
+        cursor.execute(sql)
+        rows = cursor.fetchall()
+        names = [row["username"] for row in rows]
+        return success_response(data=names, code=HTTP_OK)
+    except Exception as e:
+        return error_response(message=f"获取终端用户名失败：{str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)

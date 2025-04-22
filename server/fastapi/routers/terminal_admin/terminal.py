@@ -5,7 +5,7 @@ from fastapi import APIRouter, Body, Depends, Query
 from model.terminal_admin.terminal_model import TerminalQuery, TerminalMoveGroup, TerminalStatusCount, \
     OSDistributionItem
 from service.terminal_admin.terminal_service import get_terminal_list, get_terminal_detail, move_terminal_to_group, \
-    get_terminal_columns, get_terminal_status_count, get_terminal_os_distribution
+    get_terminal_columns, get_terminal_status_count, get_terminal_os_distribution, get_username_list
 from utils.check_perm import check_permission
 from utils.log.log_context import log_context_dependency
 
@@ -44,3 +44,8 @@ def get_terminal_status():
 @router.get("/os-distribution", response_model=List[OSDistributionItem])
 def get_terminal_os():
     return get_terminal_os_distribution()
+
+# 获取用户名建议列表
+@router.get("/username")
+def list_usernames():
+    return get_username_list()

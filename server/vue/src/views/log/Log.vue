@@ -13,26 +13,34 @@
                     </el-card>
                 </el-col>
 
-                <!-- 右侧内容 -->
                 <el-col :span="20">
-                    <!-- 筛选区域 -->
+                    <!-- 筛选栏 -->
                     <el-card shadow="never" class="mb-2">
                         <el-form :model="filters" label-position="left">
                             <el-row :gutter="20">
+                                <!-- 用户名 -->
                                 <el-col :span="8">
-                                    <el-form-item label="用户名：">
-                                        <el-input v-model="filters.username" placeholder="请输入" clearable
-                                            @clear="handleRefresh" @keyup.enter="handleSearch">
-                                            <template #suffix>
-                                                <span @click="handleSearch" style="cursor: pointer;">
-                                                    <el-icon class="search-icon">
-                                                        <Search />
-                                                    </el-icon>
-                                                </span>
-                                            </template>
-                                        </el-input>
-                                    </el-form-item>
+                                <el-form-item label="用户名：">
+                                    <el-autocomplete
+                                    v-model="filters.username"
+                                    :fetch-suggestions="getUsernameSuggestions"
+                                    placeholder="请输入终端用户名"
+                                    clearable
+                                    @clear="handleSearch"
+                                    @select="handleSearch"
+                                    @keyup.enter.native="handleSearch"
+                                    >
+                                    <template #suffix>
+                                        <el-icon @click="handleSearch" style="cursor: pointer">
+                                        <Search />
+                                        </el-icon>
+                                    </template>
+                                    </el-autocomplete>
+                                </el-form-item>
                                 </el-col>
+
+
+                                <!-- 行为类型 -->
                                 <el-col :span="8">
                                     <el-form-item label="行为类型：">
                                         <el-select v-model="filters.behavior_type" placeholder="请选择" clearable
@@ -43,6 +51,8 @@
                                         </el-select>
                                     </el-form-item>
                                 </el-col>
+
+                                <!-- 时间范围 -->
                                 <el-col :span="8">
                                     <el-form-item label="时间范围：">
                                         <el-date-picker v-model="filters.timeRange" type="daterange"
@@ -55,11 +65,6 @@
                                 <el-col :span="24">
                                     <div
                                         style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
-                                        <el-button @click="handleExport">
-                                            <el-icon>
-                                                <Download />
-                                            </el-icon> 导出
-                                        </el-button>
                                         <el-button circle @click="handleRefresh" style="margin-left: 10px;">
                                             <el-icon>
                                                 <Refresh />
@@ -73,7 +78,7 @@
 
                     <!-- 日志表格 -->
                     <el-card shadow="never">
-                        <el-table :data="tableData" border :loading="loading" style="width: 100%;">
+                        <el-table :data="tableData" border :loading="loading" style="width: 100%;" v-loading="loading">
                             <el-table-column prop="event_time" label="时间" width="160" />
                             <el-table-column prop="username" label="用户名" width="120">
                                 <template #default="scope">
@@ -93,9 +98,16 @@
 
                         <!-- 分页 -->
                         <div class="pagination-container">
-                            <el-pagination background layout="total, sizes, prev, pager, next, jumper" :total="total"
-                                :page-size="pageSize" :page-sizes="[6, 10, 20]" :current-page="pageNum"
-                                @current-change="handlePageChange" @size-change="handleSizeChange" />
+                            <el-pagination
+                            background
+                            layout="total, sizes, prev, pager, next, jumper"
+                            :total="total"
+                            :page-sizes="[10, 20, 30]"
+                            v-model:current-page="pageNum"
+                            v-model:page-size="pageSize"
+                            @current-change="handlePageChange"
+                            @size-change="handleSizeChange"
+                            />
                         </div>
                     </el-card>
                 </el-col>
@@ -105,12 +117,23 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { getBehaviorLogList } from '@/api/log/log.js'
+import { getGroupTree } from '@/api/terminal_admin/group.js'
+import { getUsernameList } from '@/api/terminal_admin/terminal.js'
 
+
+// 加载状态
 const loading = ref(false)
 
-// 筛选项
+// 分页数据
+const pageNum = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+const tableData = ref([])
+
+// 筛选参数
 const filters = ref({
     username: '',
     behavior_type: '',
@@ -118,19 +141,32 @@ const filters = ref({
     group_id: null
 })
 
-// 分页
-const pageNum = ref(1)
-const pageSize = ref(10)
-const total = ref(0)
-const tableData = ref([]) // TODO: 接入接口数据
-
 // 分组树
 const groupList = ref([])
 const selectedGroupId = ref(0)
 const groupFilter = ref('')
 const defaultProps = { children: 'children', label: 'group_name' }
 
+// 分组过滤函数
 const filterGroup = (value, data) => data.group_name.includes(value)
+
+// 加载分组树
+const loadGroupTree = async () => {
+  try {
+    const res = await getGroupTree()
+    if (res.data.code === 200 && Array.isArray(res.data.data)) {
+      groupList.value = [
+        { group_id: 0, group_name: '全部终端' },
+        ...res.data.data
+      ]
+    } else {
+      ElMessage.error(res.data.message || '分组树加载失败')
+    }
+  } catch (err) {
+    ElMessage.error(err.message || '获取分组数据异常')
+  }
+}
+// 分组点击事件
 const handleGroupClick = (node) => {
     selectedGroupId.value = node.group_id
     filters.value.group_id = node.group_id === 0 ? null : node.group_id
@@ -138,42 +174,80 @@ const handleGroupClick = (node) => {
     handleSearch()
 }
 
-// 操作行为
-const handleSearch = async () => {
+// 获取用户名
+const usernameSuggestions = ref([])
+const loadUsernameSuggestions = async () => {
+  try {
+    const res = await getUsernameList()
+    usernameSuggestions.value = res.data.data || []
+  } catch (err) {
+    usernameSuggestions.value = []
+    ElMessage.warning('终端用户名加载失败')
+  }
+}
+
+// 模糊匹配
+const getUsernameSuggestions = (query, cb) => {
+  const result = usernameSuggestions.value
+    .filter(name => name.toLowerCase().includes(query.toLowerCase()))
+    .map(name => ({ value: name }))
+  cb(result)
+}
+
+// 获取日志
+const loadBehaviorLogs = async () => {
   try {
     loading.value = true
-    pageNum.value = 1
-    // await 接口请求
+    const [start, end] = filters.value.timeRange || []
+    const params = {
+      page: pageNum.value,
+      page_size: pageSize.value,
+      username: filters.value.username?.trim() || null,
+      behavior_type: filters.value.behavior_type || null,
+      group_id: filters.value.group_id || null,
+      start_date: start || null,
+      end_date: end || null
+    }
+    const res = await getBehaviorLogList(params)
+    tableData.value = res.data.list
+    total.value = res.data.total
   } catch (err) {
-    ElMessage.error("加载失败")
+    ElMessage.error('加载失败')
   } finally {
     loading.value = false
   }
 }
 
+// 查询
+const handleSearch = () => {
+  pageNum.value = 1
+  loadBehaviorLogs()
+}
+
+
+// 分页变化
 const handlePageChange = (val) => {
     pageNum.value = val
     handleSearch()
 }
+
 const handleSizeChange = (val) => {
     pageSize.value = val
     pageNum.value = 1
     handleSearch()
 }
-const handleDateChange = (val) => {
-    // 仅在选择完一对起止时间后触发搜索
-    if (val && val.length === 2) {
-        handleSearch()
-    }
-}
-const handleRefresh = () => {
+
+const handleDateChange = () => {
     handleSearch()
 }
-const handleExport = () => {
-    ElMessage.success('导出功能暂未实现')
+
+// 刷新按钮
+const handleRefresh = () => {
+    loadGroupTree()
+    loadUsernameSuggestions()
+    handleSearch()
 }
 
-// 行为类型标签样式
 const tagType = (type) => {
     switch (type) {
         case '网站访问': return 'success'
@@ -182,6 +256,13 @@ const tagType = (type) => {
         default: return 'default'
     }
 }
+
+// 初始化
+onMounted(() => {
+    loadGroupTree()
+    loadUsernameSuggestions()
+    loadBehaviorLogs()
+})
 </script>
 
 <style scoped>
