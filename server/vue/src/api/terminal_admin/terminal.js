@@ -23,9 +23,14 @@ export function moveTerminalToGroup(data) {
 // 获取终端状态统计
 export function getTerminalStatusCount() {
     return request.get('/terminal/status-count')
-  }
-  
-  // 获取操作系统分布
-  export function getTerminalOSDistribution() {
+}
+
+// 获取操作系统分布
+export function getTerminalOSDistribution() {
     return request.get('/terminal/os-distribution')
-  }
+}
+
+// 获取终端用户名
+export const getUsernameList = () => {
+    return request.get('/terminal/username')
+}
