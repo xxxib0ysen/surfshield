@@ -102,9 +102,7 @@ def get_module_list_service():
 
 
 # 分页查询终端管控日志
-@log_operation(module="终端管控日志",action="behavior:query",is_query=True,template="{operator} 查询了终端管控日志"
-)
-# 查询终端管控日志
+@log_operation(module="终端管控日志", action="behavior:query", is_query=True, template="{operator} 查询了终端管控日志")
 def get_behavior_log_list(query: BehaviorLogQuery):
     try:
         conn = create_connection()
@@ -113,17 +111,42 @@ def get_behavior_log_list(query: BehaviorLogQuery):
         filters = []
         values = []
 
-        # 筛选用户名（模糊）
+        # ✅ 分组筛选：递归获取该组及其子组下所有终端 ID
+        if query.group_id is not None:
+            cursor.execute("select group_id, parent_id from sys_group")
+            all_groups = cursor.fetchall()
+
+            # 递归获取所有子分组 ID
+            def get_all_subgroups(gid, groups):
+                result = [gid]
+                for g in groups:
+                    if g['parent_id'] == gid:
+                        result.extend(get_all_subgroups(g['group_id'], groups))
+                return result
+
+            group_ids = get_all_subgroups(query.group_id, all_groups)
+            cursor.execute(f"select id from sys_terminal where group_id in ({','.join(['%s'] * len(group_ids))})", group_ids)
+            terminal_rows = cursor.fetchall()
+            terminal_ids = [row["id"] for row in terminal_rows]
+
+            if terminal_ids:
+                placeholders = ','.join(['%s'] * len(terminal_ids))
+                filters.append(f"b.terminal_id in ({placeholders})")
+                values.extend(terminal_ids)
+            else:
+                filters.append("1 = 0")  # 返回空结果
+
+        # ✅ 用户名模糊匹配
         if query.username:
             filters.append("t.username like %s")
-            values.append(f"%{query.username}%")
+            values.append(f"%{query.username.strip()}%")
 
-        # 筛选行为类型
+        # ✅ 行为类型
         if query.behavior_type:
             filters.append("b.behavior_type = %s")
             values.append(query.behavior_type)
 
-        # 筛选时间范围
+        # ✅ 时间范围
         if query.start_date:
             filters.append("b.event_time >= %s")
             values.append(query.start_date)
@@ -131,21 +154,11 @@ def get_behavior_log_list(query: BehaviorLogQuery):
             filters.append("b.event_time <= %s")
             values.append(query.end_date)
 
-        # 筛选分组（支持 group_id 或 group_ids）
-        if query.group_id:
-            filters.append("t.group_id = %s")
-            values.append(query.group_id)
-        elif query.group_ids:
-            filters.append("t.group_id in %s")
-            values.append(tuple(query.group_ids))
-
-        # 拼接 where 语句
+        # ✅ 拼接 where 子句
         where_clause = " and ".join(filters)
         where_clause = f"where {where_clause}" if where_clause else ""
 
-        offset = (query.page - 1) * query.page_size
-
-        # 查询总数
+        # ✅ 查询总数
         count_sql = f"""
             select count(*) as total
             from log_behavior b
@@ -155,7 +168,8 @@ def get_behavior_log_list(query: BehaviorLogQuery):
         cursor.execute(count_sql, values)
         total = cursor.fetchone()["total"]
 
-        # 查询分页数据
+        # ✅ 查询数据
+        offset = (query.page - 1) * query.page_size
         sql = f"""
             select b.id, b.event_time, t.username, b.ip_address,
                    b.behavior_type, b.detail
@@ -168,14 +182,10 @@ def get_behavior_log_list(query: BehaviorLogQuery):
         cursor.execute(sql, values + [query.page_size, offset])
         rows = cursor.fetchall()
 
-        # 格式化时间字段
+        from utils.common import format_time_in_rows
         rows = format_time_in_rows(rows, ["event_time"])
 
-        return success_response(data={
-            "total": total,
-            "list": rows
-        }, code=HTTP_OK)
+        return success_response(data={"total": total, "list": rows}, code=HTTP_OK)
 
     except Exception as e:
         return error_response(message=f"获取终端行为日志失败：{str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)
-

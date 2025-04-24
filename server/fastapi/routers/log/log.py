@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 from model.log.log_model import OperationLogListResponse, OperationLogQuery,BehaviorLogQuery
 from service.log.log_service import get_operation_log_list, get_module_list_service, get_behavior_log_list
 from utils.check_perm import check_permission
@@ -19,7 +19,7 @@ def get_module_list():
     return get_module_list_service()
 
 # 分页查询终端管控日志列表
-@router.get("/behavior/list")
-def list_behavior_logs(query: BehaviorLogQuery = Depends(), _=Depends(log_context_dependency),
+@router.post("/behavior/list")
+def list_behavior_logs(query: BehaviorLogQuery = Body(...), _=Depends(log_context_dependency),
                        _p=Depends(check_permission("log:behavior:list"))):
     return get_behavior_log_list(query)

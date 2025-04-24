@@ -12,7 +12,7 @@ from client.config.config import redis_client
 terminal_id = get_terminal_id()
 
 last_ts = (time() + 11644473600) * 1_000_000
-
+last_search_keywords = {}
 
 # 写入网页访问记录到 Redis
 def record_web_visit(record):
@@ -78,6 +78,11 @@ def record_search_behavior(record):
         if not keyword:
             return
 
+        now_ts = time()
+        if now_ts - last_search_keywords.get(keyword, 0) < 60:
+            return  # 距离上次相同关键词不足60秒，跳过
+        last_search_keywords[keyword] = now_ts
+
         key = f"behavior:search:{terminal_id}"
         redis_client.lpush(key, json.dumps({
             "terminal_id": terminal_id,
@@ -102,7 +107,7 @@ def behavior_loop():
             records = extract_all_browser_history(last_ts)
 
             if not records:
-                sleep(10)
+                sleep(5)
                 continue
 
             for record in records:

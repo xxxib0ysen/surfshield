@@ -19,5 +19,5 @@ export const getModuleList = () => {
 
 // 获取终端管控日志
 export const getBehaviorLogList = (params) => {
-  return request.get('/log/behavior/list', params)
+  return request.post('/log/behavior/list', params)
 }

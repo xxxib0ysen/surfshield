@@ -5,11 +5,16 @@
                 <!-- 组织架构 -->
                 <el-col :span="4">
                     <el-card shadow="never">
-                        <el-input v-model="groupFilter" placeholder="输入关键字进行过滤" clearable @clear="handleRefresh"
-                            @input="handleSearch" style="margin-bottom: 16px;" />
-                        <el-tree class="group-tree" :data="groupList" :props="defaultProps" node-key="group_id"
-                            default-expand-all accordion highlight-current :current-node-key="selectedGroupId"
-                            :filter-node-method="filterGroup" @node-click="handleGroupClick" />
+                      <el-tree
+                            class="group-tree"
+                            :data="groupList"
+                            :props="defaultProps"
+                            node-key="group_id"
+                            highlight-current
+                            :current-node-key="selectedGroupId"
+                            :expand-on-click-node="false"
+                            @node-click="handleGroupClick"
+                        />
                     </el-card>
                 </el-col>
 
@@ -120,9 +125,8 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getBehaviorLogList } from '@/api/log/log.js'
-import { getGroupTree } from '@/api/terminal_admin/group.js'
-import { getUsernameList } from '@/api/terminal_admin/terminal.js'
-
+import { getGroupUserTree } from '@/api/terminal_admin/group.js'
+import { getUsernameList} from '@/api/terminal_admin/terminal.js'
 
 // 加载状态
 const loading = ref(false)
@@ -135,46 +139,44 @@ const tableData = ref([])
 
 // 筛选参数
 const filters = ref({
-    username: '',
-    behavior_type: '',
-    timeRange: [],
-    group_id: null
+  username: '',
+  behavior_type: '',
+  timeRange: [],
+  group_id: null
 })
 
 // 分组树
 const groupList = ref([])
-const selectedGroupId = ref(0)
-const groupFilter = ref('')
-const defaultProps = { children: 'children', label: 'group_name' }
-
-// 分组过滤函数
-const filterGroup = (value, data) => data.group_name.includes(value)
+const selectedGroupId = ref(null)
+const defaultProps = { label: 'group_name', children: 'children' }
 
 // 加载分组树
 const loadGroupTree = async () => {
   try {
-    const res = await getGroupTree()
+    const res = await getGroupUserTree()
     if (res.data.code === 200 && Array.isArray(res.data.data)) {
-      groupList.value = [
-        { group_id: 0, group_name: '全部终端' },
-        ...res.data.data
-      ]
-    } else {
-      ElMessage.error(res.data.message || '分组树加载失败')
+      groupList.value = res.data.data
     }
   } catch (err) {
-    ElMessage.error(err.message || '获取分组数据异常')
+    ElMessage.error('获取分组数据失败')
   }
 }
+
 // 分组点击事件
 const handleGroupClick = (node) => {
-    selectedGroupId.value = node.group_id
-    filters.value.group_id = node.group_id === 0 ? null : node.group_id
-    pageNum.value = 1
-    handleSearch()
+  if (node.isUser) {
+    filters.value.username = node.group_name
+    filters.value.group_id = null
+  } else {
+    filters.value.username = ''
+    filters.value.group_id = node.group_id
+  }
+  selectedGroupId.value = node.group_id
+  pageNum.value = 1
+  loadBehaviorLogs()
 }
 
-// 获取用户名
+// 用户名建议
 const usernameSuggestions = ref([])
 const loadUsernameSuggestions = async () => {
   try {
@@ -186,7 +188,7 @@ const loadUsernameSuggestions = async () => {
   }
 }
 
-// 模糊匹配
+// 用户名模糊匹配
 const getUsernameSuggestions = (query, cb) => {
   const result = usernameSuggestions.value
     .filter(name => name.toLowerCase().includes(query.toLowerCase()))
@@ -194,76 +196,80 @@ const getUsernameSuggestions = (query, cb) => {
   cb(result)
 }
 
-// 获取日志
+// 获取行为日志
 const loadBehaviorLogs = async () => {
   try {
     loading.value = true
-    const [start, end] = filters.value.timeRange || []
     const params = {
       page: pageNum.value,
-      page_size: pageSize.value,
-      username: filters.value.username?.trim() || null,
-      behavior_type: filters.value.behavior_type || null,
-      group_id: filters.value.group_id || null,
-      start_date: start || null,
-      end_date: end || null
+      page_size: pageSize.value
+    }
+    if (filters.value.username?.trim()) {
+      params.username = filters.value.username.trim()
+    }
+    if (filters.value.behavior_type?.trim()) {
+      params.behavior_type = filters.value.behavior_type
+    }
+    if (filters.value.group_id !== null && filters.value.group_id !== undefined) {
+      params.group_id = filters.value.group_id
+    }
+    if (filters.value.timeRange?.length === 2) {
+      params.start_date = filters.value.timeRange[0]
+      params.end_date = filters.value.timeRange[1]
     }
     const res = await getBehaviorLogList(params)
-    tableData.value = res.data.list
-    total.value = res.data.total
+    tableData.value = res.data?.data?.list ?? []
+    total.value = res.data?.data?.total ?? 0
   } catch (err) {
-    ElMessage.error('加载失败')
+    ElMessage.error('行为日志加载失败')
+    tableData.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
 }
 
-// 查询
+
+// 筛选/刷新
 const handleSearch = () => {
   pageNum.value = 1
   loadBehaviorLogs()
 }
-
-
-// 分页变化
-const handlePageChange = (val) => {
-    pageNum.value = val
-    handleSearch()
-}
-
-const handleSizeChange = (val) => {
-    pageSize.value = val
-    pageNum.value = 1
-    handleSearch()
-}
-
-const handleDateChange = () => {
-    handleSearch()
-}
-
-// 刷新按钮
+const handleDateChange = () => handleSearch()
 const handleRefresh = () => {
-    loadGroupTree()
-    loadUsernameSuggestions()
-    handleSearch()
+  loadGroupTree()
+  loadUsernameSuggestions()
+  loadBehaviorLogs()
+  ElMessage.success('刷新成功')
+}
+const handlePageChange = (val) => {
+  pageNum.value = val
+  loadBehaviorLogs()
+}
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  pageNum.value = 1
+  loadBehaviorLogs()
 }
 
+// 标签类型转换
 const tagType = (type) => {
-    switch (type) {
-        case '网站访问': return 'success'
-        case '搜索行为': return 'info'
-        case '进程运行': return 'warning'
-        default: return 'default'
-    }
+  switch (type) {
+    case '网站访问': return 'success'
+    case '搜索行为': return 'info'
+    case '进程运行': return 'warning'
+    default: return 'default'
+  }
 }
 
 // 初始化
 onMounted(() => {
-    loadGroupTree()
-    loadUsernameSuggestions()
-    loadBehaviorLogs()
+  loadGroupTree()
+  loadUsernameSuggestions()
+  loadBehaviorLogs()
 })
 </script>
+
 
 <style scoped>
 .log-behavior-container {

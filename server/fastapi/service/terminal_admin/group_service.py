@@ -150,3 +150,57 @@ def create_default_group_service():
             conn.commit()
     except Exception:
         pass
+
+
+def get_group_with_user_tree_service():
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+
+        # 获取分组数据
+        cursor.execute("select * from sys_group order by parent_id, group_id")
+        groups = cursor.fetchall()
+        group_map = {g['group_id']: {**g, 'children': []} for g in groups}
+
+        # 获取终端数据
+        cursor.execute("select username, group_id from sys_terminal where username is not null and username != ''")
+        terminals = cursor.fetchall()
+
+        # 构建用户节点
+        for t in terminals:
+            g_id = t['group_id']
+            user_node = {
+                'group_name': t['username'],
+                'isUser': True,
+                'isLeaf': True
+            }
+            if g_id in group_map:
+                group_map[g_id]['children'].append(user_node)
+
+        # 构建树结构
+        root = []
+        for group in groups:
+            node = group_map[group['group_id']]
+            parent_id = group['parent_id']
+            node.update({
+                'isUser': False,
+                'hasChildren': bool(node['children'])
+            })
+            if parent_id in group_map:
+                group_map[parent_id]['children'].append(node)
+            else:
+                root.append(node)
+
+        # 添加全部终端节点（不展开）
+        root.insert(0, {
+            'group_id': None,
+            'group_name': '全部终端',
+            'children': [],
+            'hasChildren': False,
+            'isUser': False
+        })
+
+        return success_response(data=root, code=HTTP_OK)
+
+    except Exception as e:
+        return error_response(message=f"获取组织+用户树失败：{str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)

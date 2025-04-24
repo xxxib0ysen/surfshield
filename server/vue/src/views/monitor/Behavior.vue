@@ -99,7 +99,7 @@ let timer = null
 const startTimer = () => {
     timer = setInterval(() => {
         handleSearch()
-    }, 30000)
+    }, 15000)
 }
 const stopTimer = () => {
     if (timer) clearInterval(timer)
