@@ -204,3 +204,78 @@ def get_group_with_user_tree_service():
 
     except Exception as e:
         return error_response(message=f"获取组织+用户树失败：{str(e)}", code=HTTP_INTERNAL_SERVER_ERROR)
+
+
+# 获取邀请码列表
+def get_invite_list_service():
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+        cursor.execute("select * from sys_group_code order by createdon desc")
+        data = cursor.fetchall()
+        return success_response(data=data)
+    except Exception as e:
+        return error_response(message=f"查询失败: {e}", code=HTTP_INTERNAL_SERVER_ERROR)
+
+
+# 新增邀请码
+def add_invite_service(data):
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+
+        # 唯一性校验
+        cursor.execute("select count(*) as cnt from sys_group_code where group_code = %s", (data.group_code,))
+        if cursor.fetchone()['cnt'] > 0:
+            return error_response(message="邀请码已存在", code=HTTP_BAD_REQUEST)
+
+        sql = """
+            insert into sys_group_code (group_code, group_id, status, description, createdon)
+            values (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(sql, (
+            data.group_code, data.group_id, data.status,
+            data.description, datetime.now()
+        ))
+        conn.commit()
+        return success_response(message="新增成功", code=HTTP_CREATED)
+    except Exception as e:
+        return error_response(message=f"新增失败: {e}", code=HTTP_INTERNAL_SERVER_ERROR)
+
+
+# 编辑邀请码
+def update_invite_service(id: int, data):
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+
+        # 校验唯一性
+        cursor.execute("select id from sys_group_code where group_code = %s and id != %s", (data.group_code, id))
+        if cursor.fetchone():
+            return error_response(message="邀请码已存在", code=HTTP_BAD_REQUEST)
+
+        sql = """
+            update sys_group_code
+            set group_code = %s, group_id = %s, status = %s, description = %s
+            where id = %s
+        """
+        cursor.execute(sql, (
+            data.group_code, data.group_id, data.status,
+            data.description, id
+        ))
+        conn.commit()
+        return success_response(message="更新成功")
+    except Exception as e:
+        return error_response(message=f"更新失败: {e}", code=HTTP_INTERNAL_SERVER_ERROR)
+
+
+# 删除邀请码
+def delete_invite_service(id: int):
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+        cursor.execute("delete from sys_group_code where id = %s", (id,))
+        conn.commit()
+        return success_response(message="删除成功")
+    except Exception as e:
+        return error_response(message=f"删除失败: {e}", code=HTTP_INTERNAL_SERVER_ERROR)

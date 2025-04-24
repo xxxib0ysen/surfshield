@@ -29,3 +29,15 @@ class GroupInfo(BaseModel):
     parent_id: Optional[int]
     description: Optional[str]
     createdon: datetime
+
+class InviteCreate(BaseModel):
+    group_code: str
+    group_id: int
+    status: int = 1
+    description: Optional[str] = None
+
+class InviteUpdate(BaseModel):
+    group_code: str
+    group_id: int
+    status: int
+    description: Optional[str] = None

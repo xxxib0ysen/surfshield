@@ -15,6 +15,9 @@
         <el-button size="mini" @click="openAddDialog()" style="float:right;margin-right: 15px">
           新增分组
         </el-button>
+        <el-button size="mini" @click="openInviteDialog" style="float:right;margin-right: 15px">
+          管理邀请码
+        </el-button>
       </el-card>
 
       <!-- 数据表 -->
@@ -73,6 +76,65 @@
         <el-button type="primary" @click="submitForm">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 邀请码管理 -->
+    <el-dialog v-model="inviteDialogVisible" title="邀请码管理" width="600px" @close="resetInviteForm">
+      <el-button @click="openInviteAddDialog" style="margin-bottom: 10px;">
+        新增邀请码
+      </el-button>
+
+      <el-table :data="inviteList" border >
+        <el-table-column label="邀请码" prop="group_code" />
+        <el-table-column label="所属分组" prop="group_id">
+          <template #default="scope">
+            {{ getGroupName(scope.row.group_id) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" prop="status">
+          <template #default="scope">
+            <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
+              {{ scope.row.status === 1 ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="备注" prop="description" />
+        <el-table-column label="操作" width="180">
+          <template #default="scope">
+            <el-button type="text" @click="openInviteEditDialog(scope.row)">编辑</el-button>
+            <el-button type="text" @click="confirmInviteDelete(scope.row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 邀请码编辑弹窗 -->
+      <el-dialog v-model="inviteFormVisible" :title="inviteEditMode ? '编辑邀请码' : '新增邀请码'" width="400px">
+        <el-form :model="inviteForm" ref="inviteFormRef" label-width="80px">
+          <el-form-item label="邀请码" prop="group_code">
+            <el-input v-model="inviteForm.group_code" />
+          </el-form-item>
+          <el-form-item label="分组" prop="group_id">
+            <el-cascader
+              v-model="inviteForm.group_id"
+              :options="groupOptions"
+              :props="cascaderProps"
+              clearable
+              placeholder="请选择分组"
+              style="width: 100%;"
+            />
+          </el-form-item>
+          <el-form-item label="状态" prop="status">
+            <el-switch v-model="inviteForm.status" :active-value="1" :inactive-value="0" />
+          </el-form-item>
+          <el-form-item label="备注">
+            <el-input v-model="inviteForm.description" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="inviteFormVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitInviteForm">保存</el-button>
+        </template>
+      </el-dialog>
+    </el-dialog>
   </el-container>
 </template>
 
@@ -84,7 +146,11 @@ import {
   getGroupDetail,
   addGroup,
   updateGroup,
-  deleteGroup
+  deleteGroup,
+  getInviteList,
+  addInvite,
+  updateInvite,
+  deleteInvite
 } from '@/api/terminal_admin/group'
 
 const loading = ref(false)
@@ -269,6 +335,133 @@ const containsId = (node, targetId) => {
   }
   return false
 }
+
+// 邀请码相关
+const inviteDialogVisible = ref(false)
+const inviteFormVisible = ref(false)
+const inviteEditMode = ref(false)
+const inviteList = ref([])
+
+const inviteFormRef = ref()
+const inviteForm = ref({
+  group_code: '',
+  group_id: null,
+  status: 1,
+  description: ''
+})
+
+
+// 获取邀请码列表
+const loadInviteList = async () => {
+  try {
+    const res = await getInviteList()
+    if (res.data.code === 200) {
+      inviteList.value = res.data.data || []
+    } else {
+      ElMessage.error(res.data.message)
+    }
+  } catch (err) {
+    ElMessage.error('获取邀请码失败')
+  }
+}
+
+// 打开邀请码管理弹窗
+const openInviteDialog = async () => {
+  inviteDialogVisible.value = true
+  if (groupOptions.value.length === 0) {
+    await loadGroups()
+  }
+  await loadInviteList()
+}
+
+
+// 打开新增邀请码表单
+const openInviteAddDialog = () => {
+  inviteEditMode.value = false
+  inviteForm.value = {
+    group_code: '',
+    group_id: null,
+    status: 1,
+    description: ''
+  }
+  inviteFormVisible.value = true
+}
+
+// 打开编辑表单
+const openInviteEditDialog = (row) => {
+  inviteEditMode.value = true
+  inviteForm.value = { ...row }
+  inviteFormVisible.value = true
+}
+
+// 提交邀请码
+const submitInviteForm = () => {
+  inviteFormRef.value.validate(async (valid) => {
+    if (!valid) return
+
+    try {
+      const res = inviteEditMode.value
+        ? await updateInvite(inviteForm.value.id, inviteForm.value)
+        : await addInvite(inviteForm.value)
+
+      if (res.data.code === 200 || res.data.code === 201) {
+        ElMessage.success(res.data.message)
+        inviteFormVisible.value = false
+        await loadInviteList()
+      } else {
+        ElMessage.error(res.data.message || '保存失败')
+      }
+    } catch (err) {
+      ElMessage.error('保存失败')
+    }
+  })
+}
+
+// 删除邀请码
+const confirmInviteDelete = (row) => {
+  ElMessageBox.confirm('确认删除该邀请码？', '提示', { type: 'warning' })
+    .then(async () => {
+      const res = await deleteInvite(row.id)
+      if (res.data.code === 200) {
+        ElMessage.success('删除成功')
+        await loadInviteList()
+      } else {
+        ElMessage.error(res.data.message || '删除失败')
+      }
+    })
+    .catch(() => {})
+}
+
+// 关闭弹窗时重置表单
+const resetInviteForm = () => {
+  inviteForm.value = {
+    group_code: '',
+    group_id: null,
+    status: 1,
+    description: ''
+  }
+  inviteFormVisible.value = false
+}
+
+// 获取分组名称
+const getGroupName = (id) => {
+  const findName = (nodes) => {
+    for (const node of nodes) {
+      if (node.group_id === id) {
+        return node.group_name
+      }
+      if (node.children && node.children.length) {
+        const result = findName(node.children)
+        if (result) return result
+      }
+    }
+    return null
+  }
+
+  const name = findName(groupOptions.value)
+  return name || '-'
+}
+
 
 
 onMounted(loadGroups)
