@@ -32,19 +32,19 @@ const router = createRouter({
         },
         {
           path: '/policy/website',
-          name: WebsiteControl,
+          name: 'WebsiteControl',
           component: WebsiteControl,
           meta: { requiresAuth: true }
         },
         {
           path: '/policy/process',
-          name: ProcessControl,
+          name: 'ProcessControl',
           component: ProcessControl,
           meta: { requiresAuth: true }
         },
         {
           path: '/management/terminal',
-          name: Terminal,
+          name: 'Terminal',
           component: Terminal,
           meta: {
             requiresAuth: true,
@@ -58,7 +58,7 @@ const router = createRouter({
         },
         {
           path: '/management/admin',
-          name: Admin,
+          name: 'Admin',
           component: Admin,
           meta: {
             requiresAuth: true,
@@ -67,7 +67,7 @@ const router = createRouter({
         },
         {
           path: '/management/role',
-          name: Role,
+          name: 'Role',
           component: Role,
           meta: {
             requiresAuth: true,
@@ -76,7 +76,7 @@ const router = createRouter({
         },
         {
           path: '/management/group',
-          name: Group,
+          name: 'Group',
           component: Group,
           meta: {
             requiresAuth: true,
