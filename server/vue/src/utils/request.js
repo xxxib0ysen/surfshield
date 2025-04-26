@@ -5,7 +5,7 @@ import qs from 'qs'
 
 // 创建 axios 实例
 const service = axios.create({
-  baseURL: 'http://localhost:8000', 
+  baseURL: '/api', 
   timeout: 5000,
   
 })
