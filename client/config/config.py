@@ -2,24 +2,24 @@ import os
 
 from redis.client import Redis
 
-server_url = "http://localhost:8000"
+server_url = "http://47.116.126.88"
 
 # Redis 连接信息
 redis_client = Redis(
-    host="127.0.0.1",
+    host="47.116.126.88",
     port=6379,
     password=None,
     decode_responses=True
 )
 
 # 获取网站访问控制规则列表
-rule_sync_endpoint = "/client/website_control/listGrouped"
+rule_sync_endpoint = "/api/client/website_control/listGrouped"
 
 # 获取进程控制规则列表
-process_sync_endpoint = "/client/process/list"
+process_sync_endpoint = "/api/client/process/list"
 
 # 终端注册接口地址
-terminal_register_endpoint = "/client/register"
+terminal_register_endpoint = "/api/client/register"
 
 # 同步间隔10min
 sync_interval_minutes = 10

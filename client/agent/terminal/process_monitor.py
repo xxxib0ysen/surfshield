@@ -11,10 +11,11 @@ import os
 from client.agent.terminal.register import get_terminal_id
 from client.config import config
 from client.config.config import redis_client
+from client.logs.logger import logger
 
 terminal_id = get_terminal_id()
 terminal_user = getpass.getuser().lower()
-report_url = config.server_url.rstrip("/") + "/client/process-report"
+report_url = config.server_url.rstrip("/") + "/api/client/process-report"
 
 # 获取进程描述信息
 def get_process_description(exe_path: str) -> str:
@@ -111,36 +112,36 @@ def report_process():
         }
         response = requests.post(report_url, json=payload, timeout=30)
         if response.status_code == 200:
-            print("[进程上报] 成功")
+            logger.info("[进程上报] 成功")
         else:
-            print("[进程上报] 失败", response.text)
+            logger.error("[进程上报] 失败", response.text)
     except Exception as e:
-        print(f"[进程上报] 异常：{e}")
+        logger.error(f"[进程上报] 异常：{e}")
 
 # 进程采集循环
 def start_process_report_loop():
-    print("[进程采集] 启动进程采集上报线程...")
+    logger.info("[进程采集] 启动进程采集上报线程...")
     while True:
         report_process()
         time.sleep(5)
 
 # 终止进程
 def handle_command(cmd: dict):
-    print(f"[🔔] 收到指令: {cmd}")
+    logger.info(f"收到指令: {cmd}")
     if cmd.get("action") == "kill_process":
         pid = cmd.get("pid")
         try:
             proc = psutil.Process(pid)
             proc.terminate()
-            print(f"已终止进程 PID: {pid}")
+            logger.info(f"已终止进程 PID: {pid}")
         except Exception as e:
-            print(f"终止进程失败: {e}")
+            logger.error(f"终止进程失败: {e}")
 
 #  Redis 订阅监听线程
 def listen_for_commands():
     pubsub = redis_client.pubsub()
     pubsub.subscribe(f"terminal:cmd:{terminal_id}")
-    print(f"正在监听 Redis 指令 terminal:cmd:{terminal_id}")
+    logger.info(f"正在监听 Redis 指令 terminal:cmd:{terminal_id}")
 
     for msg in pubsub.listen():
         if msg['type'] == 'message':
@@ -148,4 +149,4 @@ def listen_for_commands():
                 cmd = json.loads(msg['data'])
                 handle_command(cmd)
             except Exception as e:
-                print(f"[指令处理失败] {e}")
+                logger.error(f"[指令处理失败] {e}")

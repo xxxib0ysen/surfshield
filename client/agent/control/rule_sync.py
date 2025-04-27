@@ -2,6 +2,7 @@ import json
 import requests
 from client.config import config
 from client.agent.control import rule_matcher
+from client.logs.logger import logger
 
 global_rules = []
 
@@ -21,8 +22,8 @@ def sync_rules():
                             rules.append(rule.get("website_url"))
             global_rules = rules
             rule_matcher.set_rules(global_rules)   # 匹配规则
-            print(f"[SYNC] 同步成功，已加载规则 {len(global_rules)} 条")
+            logger.info(f"[SYNC] 同步成功，已加载规则 {len(global_rules)} 条")
         else:
-            print(f"[SYNC] 请求失败，状态码：{response.status_code}")
+            logger.error(f"[SYNC] 请求失败，状态码：{response.status_code}")
     except Exception as e:
-        print(f"[SYNC] 同步异常：{e}")
+        logger.error(f"[SYNC] 同步异常：{e}")

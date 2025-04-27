@@ -1,7 +1,10 @@
 import sys
 import os
 
+
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
+from client.logs.logger import logger
 import atexit
 import signal
 import time
@@ -45,7 +48,7 @@ def start_heartbeat_loop():
             try:
                 report_terminal_status(1)  # 在线状态
             except Exception as e:
-                print(f"[上报异常] {e}")
+                logger.error(f"[上报异常] {e}")
             time.sleep(30)
 
     Thread(target=heartbeat_loop, daemon=True).start()
@@ -96,9 +99,9 @@ def main():
         while True:
             time.sleep(60)
     except KeyboardInterrupt:
-        print("[退出] 收到中断信号，正在退出客户端...")
+        logger.error("[退出] 收到中断信号，正在退出客户端...")
     except Exception as e:
-        print(f"[异常退出] {e}")
+        logger.error(f"[异常退出] {e}")
     finally:
         report_terminal_status(0)
 

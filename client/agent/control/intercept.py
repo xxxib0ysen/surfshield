@@ -3,6 +3,8 @@ import pydivert
 import re
 from client.agent.control import rule_matcher
 from client.agent.control.log import log_block
+from client.logs.logger import logger
+
 
 # 提取 HTTP 请求中的 Host 字段
 def extract_host(payload):
@@ -11,14 +13,14 @@ def extract_host(payload):
         for line in lines:
             if line.lower().startswith("host:"):
                 return line.split(":",1)[1].strip()
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"[HTTP] 解析Host失败: {e}", exc_info=True)
     return None
 
 # 启动 HTTP 拦截线程
 def start_http_intercept():
     def http_loop():
-        print("[HTTP] 拦截线程启动中...")
+        logger.info("[HTTP] 拦截线程启动中...")
         with pydivert.WinDivert("tcp.DstPort == 80 and tcp.PayloadLength > 0") as w:
             for packet in w:
                 if packet.is_outbound and packet.tcp and packet.payload:
@@ -62,7 +64,7 @@ def extract_sni(payload):
 # 启动 HTTPS 拦截线程
 def start_https_intercept():
     def https_loop():
-        print("[HTTPS] 拦截线程启动中...")
+        logger.info("[HTTPS] 拦截线程启动中...")
         with pydivert.WinDivert("tcp.DstPort == 443 and tcp.PayloadLength > 0") as w:
             for packet in w:
                 if packet.is_outbound and packet.tcp and packet.payload:

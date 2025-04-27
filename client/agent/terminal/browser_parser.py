@@ -3,6 +3,9 @@ import shutil
 import sqlite3
 from datetime import datetime
 
+from client.logs.logger import logger
+
+
 # 定义浏览器默认路径
 def get_browser_history_paths():
     user_dir = os.environ.get("USERPROFILE", "")
@@ -79,7 +82,7 @@ def extract_chromium_history(db_path: str, browser: str, last_ts: float):
             })
 
     except Exception as e:
-        print(f"[{browser}] 读取失败：{e}")
+        logger.error(f"[{browser}] 读取失败：{e}")
     finally:
         try:
             if os.path.exists(temp_path):
@@ -134,7 +137,7 @@ def extract_firefox_history(firefox_profile_dir: str, last_ts: float):
                 })
 
         except Exception as e:
-            print(f"[firefox] 读取失败：{e}")
+            logger.error(f"[firefox] 读取失败：{e}")
         finally:
             try:
                 if os.path.exists(temp_path):

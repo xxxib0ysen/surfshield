@@ -12,6 +12,7 @@ from getpass import getuser
 
 from client.config import config
 from client.config.config import redis_client
+from client.logs.logger import logger
 
 # 本地存储终端 ID
 terminal_id_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "terminal_id.txt")
@@ -23,7 +24,7 @@ def get_terminal_id():
             with open(terminal_id_file, "r", encoding="utf-8") as f:
                 return int(f.read().strip())
     except Exception as e:
-        print(f"[终端ID] 读取失败: {e}")
+        logger.error(f"[终端ID] 读取失败: {e}")
     return None
 
 # 获取当前用户名
@@ -105,9 +106,9 @@ def get_install_time():
                         return datetime.strptime(date_str, fmt).strftime("%Y-%m-%d %H:%M:%S")
                     except:
                         continue
-                print("[调试] 未匹配安装时间格式：", date_str)
+                logger.error("[调试] 未匹配安装时间格式：", date_str)
     except Exception as e:
-        print(f"[调试] 获取安装时间失败: {e}")
+        logger.error(f"[调试] 获取安装时间失败: {e}")
     return None
 
 
@@ -134,7 +135,7 @@ def ask_group_code():
 def register_terminal():
     # 已注册则跳过
     if os.path.exists(terminal_id_file):
-        print("终端已注册，跳过注册流程。")
+        logger.info("终端已注册，跳过注册流程。")
         return
 
     # 收集终端信息与邀请码
@@ -151,25 +152,25 @@ def register_terminal():
             terminal_id = result["data"]["terminal_id"]
             with open(terminal_id_file, "w") as f:
                 f.write(str(terminal_id))
-            print(f"终端注册成功，ID: {terminal_id}")
+            logger.info(f"终端注册成功，ID: {terminal_id}")
         else:
-            print(f"[注册失败] {result.get('message')}")
-            print(f"[注册失败] 响应内容: {result}")
+            logger.error(f"[注册失败] {result.get('message')}")
+            logger.error(f"[注册失败] 响应内容: {result}")
     except Exception as e:
-        print(f"[异常] 无法连接服务器: {e}")
+        logger.error(f"[异常] 无法连接服务器: {e}")
 
 # 更新终端信息
 def update_terminal_info():
     info = collect_terminal_info()
     try:
-        url = config.server_url + "/client/update"
+        url = config.server_url + "/api/client/update"
         res = requests.post(url, json=info)
         result = res.json()
-        print(f"[更新] {result.get('message')}")
-        print("[DEBUG] 上传终端信息：", info)
+        logger.info(f"[更新] {result.get('message')}")
+        logger.info("[DEBUG] 上传终端信息：", info)
 
     except Exception as e:
-        print(f"[异常] 更新失败: {e}")
+        logger.error(f"[异常] 更新失败: {e}")
 
 # 上报终端状态
 def report_terminal_status(status: int):
@@ -178,19 +179,19 @@ def report_terminal_status(status: int):
     try:
         with open(terminal_id_file, "r") as f:
             terminal_id = int(f.read().strip())
-        url = config.server_url + "/client/status"
+        url = config.server_url + "/api/client/status"
         res = requests.post(url, json={"terminal_id": terminal_id, "status": status})
         result = res.json()
-        print(result.get("message"))
-        print(f"[上报] terminal_id: {terminal_id}, status: {status}")
-        print(f"[上报响应] {result}")
+        logger.info(result.get("message"))
+        logger.info(f"[上报] terminal_id: {terminal_id}, status: {status}")
+        logger.info(f"[上报响应] {result}")
         if status == 1:
             redis_client.set(f"terminal:heartbeat:{terminal_id}", "1", ex=90)
         else:
             redis_client.delete(f"terminal:heartbeat:{terminal_id}")
 
     except Exception as e:
-        print(f"[异常] 上报状态失败: {e}")
+        logger.error(f"[异常] 上报状态失败: {e}")
 
 def startup_routine():
     if os.path.exists(terminal_id_file):

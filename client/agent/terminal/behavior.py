@@ -7,6 +7,7 @@ from datetime import datetime
 from client.agent.terminal.browser_parser import extract_all_browser_history
 from client.agent.terminal.register import get_terminal_id
 from client.config.config import redis_client
+from client.logs.logger import logger
 
 # 获取当前终端 ID
 terminal_id = get_terminal_id()
@@ -29,10 +30,10 @@ def record_web_visit(record):
         }))
         redis_client.ltrim(key, 0, 19)
 
-        print(f"[访问记录] {record['browser']} | {record['title']} | {record['url']}")
+        logger.info(f"[访问记录] {record['browser']} | {record['title']} | {record['url']}")
 
     except Exception as e:
-        print(f"[记录网页访问异常] {e}")
+        logger.error(f"[记录网页访问异常] {e}")
 
 # 判断 URL 是否属于搜索引擎
 def is_search_engine(url):
@@ -92,10 +93,10 @@ def record_search_behavior(record):
         }))
         redis_client.ltrim(key, 0, 19)
 
-        print(f"[搜索记录] {keyword} | {record['url']}")
+        logger.info(f"[搜索记录] {keyword} | {record['url']}")
 
     except Exception as e:
-        print(f"[记录搜索行为异常] {e}")
+        logger.error(f"[记录搜索行为异常] {e}")
 
 # 行为采集循环线程
 def behavior_loop():
@@ -123,11 +124,11 @@ def behavior_loop():
                 record_search_behavior(record)
 
         except Exception as e:
-            print(f"[行为采集异常] {e}")
+            logger.error(f"[行为采集异常] {e}")
 
         sleep(10)
 
 
 def start_behavior_capture():
-    print("[行为采集] 启动成功，开始周期性轮询浏览器历史记录")
+    logger.info("[行为采集] 启动成功，开始周期性轮询浏览器历史记录")
     Thread(target=behavior_loop, daemon=True).start()

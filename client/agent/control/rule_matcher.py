@@ -1,6 +1,8 @@
 import re
 import tldextract
 
+from client.logs.logger import logger
+
 # 预编译后的正则规则列表（提高效率）
 compiled_pattern_rules = []
 
@@ -27,7 +29,7 @@ def set_rules(rule_list):
                 compiled = re.compile(f"^{regex}$")  # fullmatch 等价写法
                 compiled_pattern_rules.append(compiled)
             except re.error:
-                print(f"[RULE] 无效正则规则跳过: {rule}")
+                logger.error(f"[RULE] 无效正则规则跳过: {rule}")
         else:
             # 主域规则直接存
             main_domain_rules.add(rule)
