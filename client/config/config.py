@@ -2,11 +2,12 @@ import os
 
 from redis.client import Redis
 
-server_url = "http://47.116.126.88"
+# server_url = "http://47.116.126.88"
+server_url = "http://localhost:8000"
 
 # Redis 连接信息
 redis_client = Redis(
-    host="47.116.126.88",
+    host="localhost",
     port=6379,
     password=None,
     decode_responses=True

@@ -18,21 +18,14 @@ from client.config.config import redis_client
 from client.config.logger import logger
 from client.gui.invite import InviteCodeDialog
 
-# 本地存储终端 ID
-terminal_info_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs", "terminal_info.txt")
-os.makedirs(os.path.dirname(terminal_info_file), exist_ok=True)
+_terminal_id = None
 
-# 从本地文件读取终端 ID
+def set_terminal_id(id_value):
+    global _terminal_id
+    _terminal_id = id_value
+
 def get_terminal_id():
-    try:
-        if os.path.exists(terminal_info_file):
-            with open(terminal_info_file, "r", encoding="utf-8") as f:
-                content = f.read().strip()
-                if content.startswith("终端id:"):
-                    return content.split("终端id:")[1].strip()
-    except Exception as e:
-        logger.error(f"[终端ID读取失败] {e}")
-    return None
+    return _terminal_id
 
 # 获取当前用户名
 def get_username():
@@ -146,43 +139,30 @@ def ask_group_code():
 
 # 注册终端
 def register_terminal(group_code: str):
-    if os.path.exists(terminal_info_file):
-        logger.info("终端已注册，跳过注册流程。")
-        return
-
     info = collect_terminal_info()
     info["group_code"] = group_code
 
     try:
-        url = config.server_url + config.terminal_register_endpoint
-        res = requests.post(url, json=info)
+        url = config.server_url.rstrip("/") + config.terminal_register_endpoint
+        res = requests.post(url, json=info, timeout=5)
         result = res.json()
         logger.info(f"[注册返回] {result}")
 
         if result.get("code") == 200:
-            data_field = result.get("data")
-            if data_field and isinstance(data_field, dict) and "terminal_id" in data_field:
-                terminal_id = data_field["terminal_id"]
-
-                # 写入本地文件
-                try:
-                    with open(terminal_info_file, "w", encoding="utf-8") as f:
-                        f.write(f"终端id:{terminal_id}\n")
-                    logger.info(f"[注册成功] 终端ID: {terminal_id}")
-                    QMessageBox.information(None, "注册成功", f"终端注册成功！终端ID: {terminal_id}")
-                except Exception as e:
-                    logger.error(f"[本地写文件失败] {e}")
-                    QMessageBox.critical(None, "注册失败", "注册过程中本地信息保存失败，请联系管理员。")
-                    sys.exit(1)
+            data = result.get("data")
+            if data and isinstance(data, dict) and "id" in data:
+                terminal_id = data["id"]
+                logger.info(f"[注册完成] 终端ID: {terminal_id}")
+                QMessageBox.information(None, "注册成功", f"终端准备完毕！ID: {terminal_id}")
+                return terminal_id
             else:
-                logger.error("[注册失败] 后端返回缺少 terminal_id")
-                QMessageBox.critical(None, "注册失败", "注册失败，服务器未返回终端ID，请联系管理员！")
+                logger.error("[注册失败] 后端返回缺少 id 字段")
+                QMessageBox.critical(None, "注册失败", "服务器返回异常，请联系管理员。")
                 sys.exit(1)
         else:
             logger.error(f"[注册失败] {result.get('message')}")
             QMessageBox.critical(None, "注册失败", f"注册失败：{result.get('message')}")
             sys.exit(1)
-
     except Exception as e:
         logger.error(f"[注册异常] {e}")
         QMessageBox.critical(None, "注册失败", "无法连接服务器，请检查网络或联系管理员！")
@@ -202,33 +182,23 @@ def update_terminal_info():
         logger.error(f"[异常] 更新失败: {e}")
 
 # 上报终端状态
-def report_terminal_status(status: int):
+def report_terminal_status(terminal_id: int, status: int):
     try:
-        terminal_id = get_terminal_id()
-        if not terminal_id:
-            return
-
-        url = config.server_url + "/api/client/status"
-        res = requests.post(url, json={"terminal_id": terminal_id, "status": status})
+        url = config.server_url.rstrip("/") + "/api/client/status"
+        res = requests.post(url, json={"terminal_id": terminal_id, "status": status}, timeout=5)
         result = res.json()
         logger.info(f"[上报终端状态] {result.get('message')}")
-
         if status == 1:
             redis_client.set(f"terminal:heartbeat:{terminal_id}", "1", ex=90)
         else:
             redis_client.delete(f"terminal:heartbeat:{terminal_id}")
-
     except Exception as e:
         logger.error(f"[异常] 上报状态失败: {e}")
 
-
 def startup_routine():
-    terminal_id = get_terminal_id()
-
-    if terminal_id:
-        logger.info(f"[启动] 已注册终端，ID: {terminal_id}，执行更新流程")
-        update_terminal_info()
-    else:
-        logger.info("[启动] 检测到未注册终端，开始注册流程")
+    try:
+        update_terminal_info()  # 只做更新信息
+    except Exception as e:
+        logger.error(f"[启动异常] {e}")
         sys.exit(1)
 

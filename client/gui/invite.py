@@ -59,15 +59,33 @@ class InviteCodeDialog(QDialog):
         self.btn_ok.clicked.connect(self.accept)
         self.btn_cancel.clicked.connect(self.reject)
 
+        self.input.returnPressed.connect(self.on_ok_clicked)
+
         # 启动后焦点自动在输入框
         self.input.setFocus()
 
+    def on_ok_clicked(self):
+        if not self.input.text().strip():
+            show_error_message("请输入邀请码后再提交！")
+            return
+        self.accept()
     def get_code(self):
         return self.input.text().strip()
 
 def show_error_message(message: str):
     box = QMessageBox()
+    box.setWindowFlags(Qt.WindowStaysOnTopHint)
     box.setWindowTitle("错误")
     box.setIcon(QMessageBox.Critical)
     box.setText(message)
+    box.setStandardButtons(QMessageBox.Ok)
+    box.exec_()
+
+def show_success_message(message: str):
+    box = QMessageBox()
+    box.setWindowFlags(Qt.WindowStaysOnTopHint)
+    box.setWindowTitle("成功")
+    box.setIcon(QMessageBox.Information)
+    box.setText(message)
+    box.setStandardButtons(QMessageBox.Ok)
     box.exec_()

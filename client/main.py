@@ -8,7 +8,7 @@ from client.agent.init import initialize_backend
 from client.gui.splash import SplashWindow
 import atexit
 import signal
-from client.agent.terminal.register import report_terminal_status
+from client.agent.terminal.register import report_terminal_status, get_terminal_id
 from threading import Thread
 from agent.control.process_control import run_process_guard
 from config import config
@@ -28,7 +28,9 @@ def start_process_guard_loop():
 
 # 退出上报离线状态
 def on_exit():
-    report_terminal_status(0)
+    terminal_id = get_terminal_id()
+    if terminal_id:
+        report_terminal_status(terminal_id, 0)
 
 def main():
     print("客户端启动中...")

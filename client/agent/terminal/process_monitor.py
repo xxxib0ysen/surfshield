@@ -106,15 +106,21 @@ def collect_process_info():
 # 上报至服务端
 def report_process():
     try:
+        terminal_id = get_terminal_id()
+        if not terminal_id:
+            logger.warning("[进程上报] 未获取到终端 ID，跳过本次上报")
+            return
+
         payload = {
             "terminal_id": terminal_id,
             "process_list": collect_process_info()
         }
+
         response = requests.post(report_url, json=payload, timeout=30)
         if response.status_code == 200:
             logger.info("[进程上报] 成功")
         else:
-            logger.error("[进程上报] 失败", response.text)
+            logger.error(f"[进程上报] 失败，响应内容：{response.text}")
     except Exception as e:
         logger.error(f"[进程上报] 异常：{e}")
 

@@ -15,11 +15,10 @@ router = APIRouter()
 @router.post("/register")
 def api_register_terminal(data: TerminalRegisterRequest):
     if not data.uuid or data.uuid.strip() == "":
-        return {
-            "code": 400,
-            "message": "缺少终端唯一标识符 uuid",
-            "data": None
-        }
+        return error_response(
+            code=HTTP_BAD_REQUEST,
+            message="缺少终端唯一标识符 uuid"
+        )
     return register_terminal(data)
 
 # 终端信息更新接口

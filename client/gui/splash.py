@@ -47,7 +47,7 @@ class SplashWindow(QWidget):
         self.setLayout(layout)
 
     def set_progress(self, value: int, text: str):
-        self.progress_bar.setValue(value)
+        self.progress_bar.setValue(min(value, 100))
         self.label_step.setText(text)
 
     def finish(self):

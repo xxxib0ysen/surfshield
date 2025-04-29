@@ -197,10 +197,15 @@ def register_terminal(data):
         group_path = get_group_path(conn, group_id)
 
         # 检查是否存在相同 uuid 的终端
-        sql = "select id, group_id, group_name from sys_terminal where uuid = %s"
+        sql = "select id, username, hostname, status, group_id, group_name from sys_terminal where uuid = %s"
         cursor.execute(sql, (data.uuid,))
-        if cursor.fetchone():
-            return error_response(code=HTTP_BAD_REQUEST, message="终端已存在，禁止重复注册")
+        existing_terminal = cursor.fetchone()
+        if existing_terminal:
+            return success_response(
+                code=HTTP_OK,
+                message="终端已存在",
+                data=existing_terminal
+            )
 
         install_time = None
         if getattr(data, "install_time", None):
@@ -232,12 +237,19 @@ def register_terminal(data):
         return success_response(
             code=HTTP_OK,
             message="终端注册成功",
+            data={
+                "id": terminal_id,
+                "username": data.username,
+                "hostname": data.hostname,
+                "status": 1,
+                "group_id": group_id,
+                "group_name": group_name
+            }
         )
     except Exception as e:
         return error_response(
             code=HTTP_BAD_REQUEST,
-            message=f"注册失败: {str(e)}",
-            data = {"terminal_id": terminal_id}
+            message=f"注册失败: {str(e)}"
         )
 
 # 更新
