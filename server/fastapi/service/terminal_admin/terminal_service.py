@@ -236,7 +236,8 @@ def register_terminal(data):
     except Exception as e:
         return error_response(
             code=HTTP_BAD_REQUEST,
-            message=f"注册失败: {str(e)}"
+            message=f"注册失败: {str(e)}",
+            data = {"terminal_id": terminal_id}
         )
 
 # 更新

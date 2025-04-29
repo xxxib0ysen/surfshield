@@ -2,12 +2,11 @@ import json
 from threading import Thread
 from time import time,sleep
 from urllib.parse import urlparse, parse_qs
-from datetime import datetime
 
 from client.agent.terminal.browser_parser import extract_all_browser_history
 from client.agent.terminal.register import get_terminal_id
 from client.config.config import redis_client
-from client.logs.logger import logger
+from client.config.logger import logger
 
 # 获取当前终端 ID
 terminal_id = get_terminal_id()

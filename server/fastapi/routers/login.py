@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from utils.auth import get_current_user, get_permission_codes
 from utils.connect import create_connection
 from utils.log.log import write_log
+from utils.response import success_response
 from utils.security import verify_password
 from utils.jwt_token import create_access_token
 
@@ -79,3 +80,7 @@ def read_current_user(current_user: dict = Depends(get_current_user)):
         "permissions": current_user["permissions"],
         "is_default_pwd": current_user["is_default_pwd"]
     }
+
+@router.get("/ping")
+async def ping():
+    return success_response(message="pong")

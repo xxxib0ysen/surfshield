@@ -1,7 +1,7 @@
 import re
 import tldextract
 
-from client.logs.logger import logger
+from client.config.logger import logger
 
 # 预编译后的正则规则列表（提高效率）
 compiled_pattern_rules = []

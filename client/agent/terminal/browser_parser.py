@@ -3,7 +3,7 @@ import shutil
 import sqlite3
 from datetime import datetime
 
-from client.logs.logger import logger
+from client.config.logger import logger
 
 
 # 定义浏览器默认路径

@@ -1,8 +1,12 @@
+from datetime import datetime
+
 import psutil
 import time
 import requests
 import logging
 from client.config import config
+from client.gui.context import main_window_instance
+from client.gui.intercept_info import record_process_block, update_rule_info
 
 full_rul = config.server_url.rstrip("/") + config.process_sync_endpoint
 scan_interval = config.process_scan_interval
@@ -21,11 +25,15 @@ def get_active_rules():
         if resp.status_code == 200:
             json_data = resp.json()
             if isinstance(json_data, dict) and isinstance(json_data.get('data'), list):
-                return [
+                rules = [
                     r['process_name'].lower()
                     for r in json_data['data']
                     if r.get('status') == 1
                 ]
+                # 更新界面
+                if main_window_instance:
+                    update_rule_info(main_window_instance, process_rule_count=len(rules))
+                return rules
     except Exception as e:
         logging.warning(f"[规则获取失败] {str(e)}")
     return []
@@ -41,6 +49,14 @@ def scan_and_kill(rules: list):
                 if rule in pname or rule in pexe:
                     logging.info(f"[拦截] 命中规则：{rule}，终止进程：{pname} (PID: {proc.pid})")
                     proc.terminate()
+
+                    # 更新界面拦截次数
+                    try:
+                        if main_window_instance:
+                            record_process_block(main_window_instance)
+                    except Exception as e:
+                        print(f"[进程拦截统计失败] {e}")
+
                     break
         except Exception:
             continue
@@ -50,11 +66,9 @@ def run_process_guard():
     while True:
         rules = get_active_rules()
         if rules:
-            print(f"获取到 {len(rules)} 条启用规则：{rules}")
-            logging.info(f"获取到 {len(rules)} 条启用规则")
+            logging.info(f"获取到 {len(rules)} 条启用规则：{rules}")
             scan_and_kill(rules)
         else:
-            print("未获取到有效规则，跳过本轮扫描")
             logging.warning("未获取到有效规则")
         time.sleep(scan_interval)
 

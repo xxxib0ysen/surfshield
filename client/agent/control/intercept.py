@@ -1,9 +1,8 @@
 from threading import Thread
 import pydivert
-import re
 from client.agent.control import rule_matcher
 from client.agent.control.log import log_block
-from client.logs.logger import logger
+from client.config.logger import logger
 
 
 # 提取 HTTP 请求中的 Host 字段

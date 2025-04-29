@@ -1,8 +1,11 @@
-import json
+from datetime import datetime
+
 import requests
 from client.config import config
 from client.agent.control import rule_matcher
-from client.logs.logger import logger
+from client.gui.context import main_window_instance
+from client.gui.intercept_info import update_rule_info
+from client.config.logger import logger
 
 global_rules = []
 
@@ -23,6 +26,10 @@ def sync_rules():
             global_rules = rules
             rule_matcher.set_rules(global_rules)   # 匹配规则
             logger.info(f"[SYNC] 同步成功，已加载规则 {len(global_rules)} 条")
+
+            # 更新界面
+            if main_window_instance:
+                update_rule_info(main_window_instance, web_rule_count=len(global_rules))
         else:
             logger.error(f"[SYNC] 请求失败，状态码：{response.status_code}")
     except Exception as e:

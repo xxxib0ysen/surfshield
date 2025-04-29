@@ -11,7 +11,7 @@ import os
 from client.agent.terminal.register import get_terminal_id
 from client.config import config
 from client.config.config import redis_client
-from client.logs.logger import logger
+from client.config.logger import logger
 
 terminal_id = get_terminal_id()
 terminal_user = getpass.getuser().lower()
