@@ -5,7 +5,8 @@ import time
 import requests
 import logging
 from client.config import config
-from client.gui.context import main_window_instance
+from client.config.logger import logger
+from client.gui.context import main_window_instance, safe_update_module_status
 from client.gui.intercept_info import record_process_block, update_rule_info
 
 full_rul = config.server_url.rstrip("/") + config.process_sync_endpoint
@@ -62,14 +63,20 @@ def scan_and_kill(rules: list):
             continue
 
 def run_process_guard():
-    print(f"每 {scan_interval} 秒扫描进程")
-    while True:
-        rules = get_active_rules()
-        if rules:
-            logging.info(f"获取到 {len(rules)} 条启用规则：{rules}")
-            scan_and_kill(rules)
-        else:
-            logging.warning("未获取到有效规则")
-        time.sleep(scan_interval)
+    logger.info("[进程拦截] 启动中...")
+    try:
+        safe_update_module_status("label_process_block", True, "进程拦截")
+        while True:
+            rules = get_active_rules()
+            if rules:
+                logging.info(f"获取到 {len(rules)} 条启用规则：{rules}")
+                scan_and_kill(rules)
+            else:
+                logging.warning("未获取到有效规则")
+            time.sleep(scan_interval)
+    except Exception as e:
+        logging.error(f"[进程拦截异常] {e}")
+        safe_update_module_status("label_process_block", False, "进程拦截")
+
 
 

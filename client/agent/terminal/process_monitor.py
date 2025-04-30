@@ -12,6 +12,7 @@ from client.agent.terminal.register import get_terminal_id
 from client.config import config
 from client.config.config import redis_client
 from client.config.logger import logger
+from client.gui.context import main_window_instance, safe_update_module_status
 
 terminal_user = getpass.getuser().lower()
 report_url = config.server_url.rstrip("/") + "/api/client/process-report"
@@ -131,9 +132,16 @@ def report_process():
 # 进程采集循环
 def start_process_report_loop():
     logger.info("[进程采集] 启动进程采集上报线程...")
-    while True:
-        report_process()
-        time.sleep(5)
+    safe_update_module_status("label_behavior_block", True, "实时管控")
+    try:
+        while True:
+            report_process()
+            time.sleep(5)
+    except Exception as e:
+        logger.error(f"[进程采集线程异常] {e}")
+        safe_update_module_status("label_behavior_block", True, "实时管控")
+
+
 
 # 终止进程
 def handle_command(cmd: dict):

@@ -3,6 +3,7 @@ import pydivert
 from client.agent.control import rule_matcher
 from client.agent.control.log import log_block
 from client.config.logger import logger
+from client.gui.context import safe_update_module_status
 
 
 # 提取 HTTP 请求中的 Host 字段
@@ -19,17 +20,22 @@ def extract_host(payload):
 # 启动 HTTP 拦截线程
 def start_http_intercept():
     def http_loop():
-        logger.info("[HTTP] 拦截线程启动中...")
-        with pydivert.WinDivert("tcp.DstPort == 80 and tcp.PayloadLength > 0") as w:
-            for packet in w:
-                if packet.is_outbound and packet.tcp and packet.payload:
-                    host = extract_host(packet.payload)
-                    if host:
-                        # print("[DEBUG] 当前访问（HTTP）：", host)
-                        if rule_matcher.is_blocked(host):
-                            log_block("http", host)
-                            continue  # 丢弃数据包
-                w.send(packet)
+        try:
+            logger.info("[HTTP] 拦截线程启动中...")
+            with pydivert.WinDivert("tcp.DstPort == 80 and tcp.PayloadLength > 0") as w:
+                safe_update_module_status("label_web_block", True, "网站拦截")  # 启动成功
+                for packet in w:
+                    if packet.is_outbound and packet.tcp and packet.payload:
+                        host = extract_host(packet.payload)
+                        if host:
+                            # print("[DEBUG] 当前访问（HTTP）：", host)
+                            if rule_matcher.is_blocked(host):
+                                log_block("http", host)
+                                continue  # 丢弃数据包
+                    w.send(packet)
+        except Exception as e:
+            logger.error(f"[HTTP] 拦截线程异常: {e}", exc_info=True)
+            safe_update_module_status("label_web_block", False, "网站拦截")  # 启动失败
     thread = Thread(target=http_loop, daemon=True)
     thread.start()
 
@@ -63,17 +69,22 @@ def extract_sni(payload):
 # 启动 HTTPS 拦截线程
 def start_https_intercept():
     def https_loop():
-        logger.info("[HTTPS] 拦截线程启动中...")
-        with pydivert.WinDivert("tcp.DstPort == 443 and tcp.PayloadLength > 0") as w:
-            for packet in w:
-                if packet.is_outbound and packet.tcp and packet.payload:
-                    sni = extract_sni(packet.payload)
-                    if sni and rule_matcher.is_blocked(sni):
-                        # print("[DEBUG] 当前访问（HTTPS）：", sni)
+        try:
+            logger.info("[HTTPS] 拦截线程启动中...")
+            with pydivert.WinDivert("tcp.DstPort == 443 and tcp.PayloadLength > 0") as w:
+                safe_update_module_status("label_web_block", True, "网站拦截")  # 启动成功
+                for packet in w:
+                    if packet.is_outbound and packet.tcp and packet.payload:
+                        sni = extract_sni(packet.payload)
+                        if sni and rule_matcher.is_blocked(sni):
+                            # print("[DEBUG] 当前访问（HTTPS）：", sni)
 
-                        log_block("https", sni)
-                        continue
-                w.send(packet)
+                            log_block("https", sni)
+                            continue
+                    w.send(packet)
+        except Exception as e:
+            logger.error(f"[HTTPS] 拦截线程异常: {e}", exc_info=True)
+            safe_update_module_status("label_web_block", False, "网站拦截")  # 启动失败
     thread = Thread(target=https_loop, daemon=True)
     thread.start()
 
