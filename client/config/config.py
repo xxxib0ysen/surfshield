@@ -22,11 +22,8 @@ process_sync_endpoint = "/api/client/process/list"
 # 终端注册接口地址
 terminal_register_endpoint = "/api/client/register"
 
-# 同步间隔10min
-sync_interval_minutes = 10
-
 # 进程扫描周期（秒）
-process_scan_interval = 1
+process_scan_interval = 600
 
 # 日志路径
 log_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs", "intercept.log")

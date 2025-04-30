@@ -7,9 +7,9 @@ import logging
 from client.config import config
 from client.config.logger import logger
 from client.gui.context import main_window_instance, safe_update_module_status
-from client.gui.intercept_info import record_process_block, update_rule_info
+from client.gui.intercept_info import update_rule_sync, record_process_block
 
-full_rul = config.server_url.rstrip("/") + config.process_sync_endpoint
+full_url = config.server_url.rstrip("/") + config.process_sync_endpoint
 scan_interval = config.process_scan_interval
 
 logging.basicConfig(
@@ -19,10 +19,13 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
+last_process_rules = []
+
 # 获取规则
 def get_active_rules():
+    global last_process_rules
     try:
-        resp = requests.get(full_rul, timeout=5)
+        resp = requests.get(full_url, timeout=5)
         if resp.status_code == 200:
             json_data = resp.json()
             if isinstance(json_data, dict) and isinstance(json_data.get('data'), list):
@@ -31,13 +34,18 @@ def get_active_rules():
                     for r in json_data['data']
                     if r.get('status') == 1
                 ]
-                # 更新界面
-                if main_window_instance:
-                    update_rule_info(main_window_instance, process_rule_count=len(rules))
-                return rules
+                if set(rules) != set(last_process_rules):
+                    last_process_rules = rules.copy()
+                    sync_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    update_rule_sync(process_rule_count=len(rules), sync_time=sync_time)
+                    logger.info(f"[进程规则] 已更新，共 {len(rules)} 条")
+                else:
+                    logger.info("[进程规则] 无变化，跳过更新时间")
+            return rules
     except Exception as e:
-        logging.warning(f"[规则获取失败] {str(e)}")
+        logger.warning(f"[进程规则获取失败] {e}")
     return []
+
 
 
 def scan_and_kill(rules: list):
@@ -48,34 +56,27 @@ def scan_and_kill(rules: list):
 
             for rule in rules:
                 if rule in pname or rule in pexe:
-                    logging.info(f"[拦截] 命中规则：{rule}，终止进程：{pname} (PID: {proc.pid})")
+                    logger.info(f"[拦截进程] 命中规则：{rule}，终止：{pname} (PID: {proc.pid})")
                     proc.terminate()
 
-                    # 更新界面拦截次数
-                    try:
-                        if main_window_instance:
-                            record_process_block(main_window_instance)
-                    except Exception as e:
-                        print(f"[进程拦截统计失败] {e}")
-
+                    # 拦截记录 + UI 更新
+                    record_process_block()
                     break
         except Exception:
             continue
 
+
 def run_process_guard():
-    logger.info("[进程拦截] 启动中...")
+    logger.info("[进程拦截] 模块启动")
     try:
         safe_update_module_status("label_process_block", True, "进程拦截")
         while True:
             rules = get_active_rules()
             if rules:
-                logging.info(f"获取到 {len(rules)} 条启用规则：{rules}")
                 scan_and_kill(rules)
-            else:
-                logging.warning("未获取到有效规则")
             time.sleep(scan_interval)
     except Exception as e:
-        logging.error(f"[进程拦截异常] {e}")
+        logger.error(f"[进程拦截异常] {e}")
         safe_update_module_status("label_process_block", False, "进程拦截")
 
 

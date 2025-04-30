@@ -1,24 +1,19 @@
 import sys
 import time
 from threading import Thread
-import requests
-from PyQt5.QtCore import QTimer, QCoreApplication
-from PyQt5.QtWidgets import QDialog
+
+from PyQt5.QtCore import QCoreApplication, QTimer
 
 from client.agent.control.intercept import start_network_intercept
 from client.agent.control.process_control import run_process_guard
 from client.agent.control.rule_sync import sync_rules
-from client.config import config
-from client.config.logger import logger
-
-from client.agent.terminal.register import (
-    startup_routine,
-    report_terminal_status,get_terminal_id)
-
-from client.agent.terminal.process_monitor import start_process_report_loop, listen_for_commands
 from client.agent.terminal.behavior import start_behavior_capture
-from client.gui.invite import InviteCodeDialog, show_error_message, show_success_message
-from client.gui.window import MainWindow
+from client.agent.terminal.process_monitor import start_process_report_loop, listen_for_commands
+from client.agent.terminal.register import get_terminal_id, report_terminal_status, startup_routine
+from client.config.logger import logger
+from client.gui.invite import show_error_message
+
+
 
 # 进度条
 def smooth_progress(splash, start: int, end: int, duration_ms: int = 500):
@@ -115,11 +110,16 @@ def initialize_backend(splash):
         smooth_progress(splash, 95, 100, duration_ms=500)
 
         def show_main_window():
+            from client.gui.intercept_info import refresh_all_ui, load_info
             try:
                 splash.finish()
                 import client.gui.context as ctx
+                from client.gui.window import MainWindow
                 ctx.main_window_instance = MainWindow()
+                ctx.main_window_instance.intercept_info = load_info()
                 ctx.main_window_instance.show()
+                QTimer.singleShot(300, lambda: refresh_all_ui(ctx.main_window_instance))
+                QTimer.singleShot(500, sync_rules)
                 logger.info("[主界面] 已成功打开")
             except Exception as e:
                 logger.error(f"[主界面启动失败] {e}")

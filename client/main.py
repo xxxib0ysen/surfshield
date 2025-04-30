@@ -1,32 +1,27 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
-from client.config.logger import logger
-import requests
-from PyQt5.QtCore import QTimer
-from client.gui.invite import show_error_message, InviteCodeDialog
-from client.agent.init import initialize_backend
-from client.gui.splash import SplashWindow
+
 import atexit
 import signal
-from client.agent.terminal.register import report_terminal_status, get_terminal_id, set_terminal_id, get_uuid, \
-    collect_terminal_info
-from threading import Thread
-from agent.control.process_control import run_process_guard
-from config import config
-from PyQt5.QtWidgets import QApplication
+import requests
 
+from threading import Thread
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QTimer
+
+from config import config
+from client.config.logger import logger
+from client.agent.init import initialize_backend
+from client.gui.splash import SplashWindow
+from client.gui.invite import show_error_message, InviteCodeDialog
+from client.agent.terminal.register import report_terminal_status, get_terminal_id, set_terminal_id, get_uuid
 
 # 确保日志目录存在
 def ensure_log_dir():
     log_dir = os.path.dirname(config.log_file_path)
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
-
-# 进程控制线程
-def start_process_guard_loop():
-    Thread(target=run_process_guard, daemon=True).start()
-
 
 # 退出上报离线状态
 def on_exit():
