@@ -23,6 +23,8 @@ _terminal_id = None
 def set_terminal_id(id_value):
     global _terminal_id
     _terminal_id = id_value
+    from client.config.logger import logger
+    logger.info(f"[终端ID设置成功] terminal_id = {_terminal_id}")
 
 def get_terminal_id():
     return _terminal_id
@@ -138,35 +140,28 @@ def ask_group_code():
         exit(0)
 
 # 注册终端
-def register_terminal(group_code: str):
-    info = collect_terminal_info()
-    info["group_code"] = group_code
-
+def register_terminal(group_code: str) -> int | None:
     try:
+        info = collect_terminal_info()
+        info["group_code"] = group_code
         url = config.server_url.rstrip("/") + config.terminal_register_endpoint
+
         res = requests.post(url, json=info, timeout=5)
+        if res.status_code != 200:
+            logger.error(f"[注册失败] 服务器返回码异常 {res.status_code}")
+            return None
+
         result = res.json()
         logger.info(f"[注册返回] {result}")
 
-        if result.get("code") == 200:
-            data = result.get("data")
-            if data and isinstance(data, dict) and "id" in data:
-                terminal_id = data["id"]
-                logger.info(f"[注册完成] 终端ID: {terminal_id}")
-                QMessageBox.information(None, "注册成功", f"终端准备完毕！ID: {terminal_id}")
-                return terminal_id
-            else:
-                logger.error("[注册失败] 后端返回缺少 id 字段")
-                QMessageBox.critical(None, "注册失败", "服务器返回异常，请联系管理员。")
-                sys.exit(1)
+        if result.get("code") == 200 and result.get("data", {}).get("id"):
+            return result["data"]["id"]
         else:
             logger.error(f"[注册失败] {result.get('message')}")
-            QMessageBox.critical(None, "注册失败", f"注册失败：{result.get('message')}")
-            sys.exit(1)
+            return None
     except Exception as e:
         logger.error(f"[注册异常] {e}")
-        QMessageBox.critical(None, "注册失败", "无法连接服务器，请检查网络或联系管理员！")
-        sys.exit(1)
+        return None
 
 # 更新终端信息
 def update_terminal_info():
@@ -197,7 +192,7 @@ def report_terminal_status(terminal_id: int, status: int):
 
 def startup_routine():
     try:
-        update_terminal_info()  # 只做更新信息
+        update_terminal_info()
     except Exception as e:
         logger.error(f"[启动异常] {e}")
         sys.exit(1)

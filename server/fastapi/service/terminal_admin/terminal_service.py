@@ -196,17 +196,6 @@ def register_terminal(data):
         group_name = group["group_name"] if group else "未知分组"
         group_path = get_group_path(conn, group_id)
 
-        # 检查是否存在相同 uuid 的终端
-        sql = "select id, username, hostname, status, group_id, group_name from sys_terminal where uuid = %s"
-        cursor.execute(sql, (data.uuid,))
-        existing_terminal = cursor.fetchone()
-        if existing_terminal:
-            return success_response(
-                code=HTTP_OK,
-                message="终端已存在",
-                data=existing_terminal
-            )
-
         install_time = None
         if getattr(data, "install_time", None):
             for fmt in ["%Y-%m-%d %H:%M:%S", "%Y/%m/%d, %H:%M:%S"]:
@@ -250,6 +239,39 @@ def register_terminal(data):
         return error_response(
             code=HTTP_BAD_REQUEST,
             message=f"注册失败: {str(e)}"
+        )
+
+# 检测注册
+def check_terminal_registered(uuid: str):
+    try:
+        conn = create_connection()
+        cursor = conn.cursor()
+        sql = "select id, username, hostname, group_id, group_name from sys_terminal where uuid = %s"
+        cursor.execute(sql, (uuid,))
+        row = cursor.fetchone()
+
+        if row:
+            return success_response(
+                code=HTTP_OK,
+                message="终端已注册",
+                data={
+                    "id": row["id"],
+                    "username": row.get("username"),
+                    "hostname": row.get("hostname"),
+                    "group_id": row.get("group_id"),
+                    "group_name": row.get("group_name")
+                }
+            )
+        else:
+            return success_response(
+                code=HTTP_OK,
+                message="终端未注册",
+                data=None
+            )
+    except Exception as e:
+        return error_response(
+            code=HTTP_INTERNAL_SERVER_ERROR,
+            message=f"查询终端注册状态失败: {e}"
         )
 
 # 更新

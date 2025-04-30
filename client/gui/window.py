@@ -1,4 +1,5 @@
 import os
+import sys
 import webbrowser
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout,
@@ -135,13 +136,31 @@ class MainWindow(QWidget):
         main_layout.addLayout(bottom_layout)
 
     # 打开日志目录
+    def get_log_dir(self):
+        if getattr(sys, 'frozen', False):  # 如果是打包后的 exe 运行
+            base_path = os.path.dirname(sys.executable)
+        else:
+            base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
+
+        log_dir = os.path.join(base_path, "logs")
+        return log_dir
+
     def open_logs_dir(self):
-        path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../logs"))
-        os.startfile(path)
+        try:
+            path = self.get_log_dir()
+            if not os.path.exists(path):
+                os.makedirs(path)
+            os.startfile(path)
+        except Exception as e:
+            print(f"打开日志目录失败: {e}")
 
     # 打开管理平台
     def open_platform_url(self):
-        webbrowser.open(config.server_url)
+        try:
+            webbrowser.open(config.server_url)
+        except Exception as e:
+            print(f"打开平台失败: {e}")
+
 
     # 检查更新（预留）
     def check_update(self):

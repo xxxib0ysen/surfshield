@@ -1,14 +1,16 @@
 import sys
 import os
-
 sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
-
+from client.config.logger import logger
+import requests
 from PyQt5.QtCore import QTimer
+from client.gui.invite import show_error_message, InviteCodeDialog
 from client.agent.init import initialize_backend
 from client.gui.splash import SplashWindow
 import atexit
 import signal
-from client.agent.terminal.register import report_terminal_status, get_terminal_id
+from client.agent.terminal.register import report_terminal_status, get_terminal_id, set_terminal_id, get_uuid, \
+    collect_terminal_info
 from threading import Thread
 from agent.control.process_control import run_process_guard
 from config import config
@@ -43,11 +45,48 @@ def main():
 
     app = QApplication(sys.argv)
 
-    # 显示启动界面
-    splash = SplashWindow()
-    splash.show()
+    # 检查注册状态
+    try:
+        uuid_value = get_uuid()
+        if not uuid_value:
+            show_error_message("无法获取终端UUID，程序无法启动")
+            sys.exit(1)
 
-    QTimer.singleShot(100, lambda: initialize_backend(splash))
+        url = config.server_url.rstrip("/") + "/api/client/check-register"
+        res = requests.post(url, json={"uuid": uuid_value}, timeout=5)
+        res.raise_for_status()
+        result = res.json()
+
+        data = result.get("data")
+
+        if isinstance(data, dict) and data.get("id"):
+            terminal_id = data["id"]
+            # 已注册
+            set_terminal_id(terminal_id)
+            logger.info(f"[启动阶段] 成功拿到终端ID: {terminal_id}")
+            splash = SplashWindow()
+            splash.show()
+            QTimer.singleShot(100, lambda: initialize_backend(splash))
+
+        else:
+            # 未注册，需要邀请码
+            dialog = InviteCodeDialog()
+            if dialog.exec_() == InviteCodeDialog.Accepted:
+                terminal_id = get_terminal_id()
+                if not terminal_id:
+                    show_error_message("注册失败，终端ID未设置")
+                    sys.exit(1)
+                logger.info(f"[邀请码注册成功] 终端ID: {terminal_id}")
+                splash = SplashWindow()
+                splash.show()
+                QTimer.singleShot(100, lambda: initialize_backend(splash))
+            else:
+                print("用户取消，退出程序")
+                sys.exit(0)
+
+    except Exception as e:
+        show_error_message(f"连接服务器异常: {e}")
+        sys.exit(1)
 
     sys.exit(app.exec_())
 

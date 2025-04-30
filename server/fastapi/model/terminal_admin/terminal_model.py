@@ -33,6 +33,9 @@ class TerminalRegisterRequest(BaseModel):
     os_version: str
     install_time: str
     is_64bit: int
+# 检查注册请求模型
+class TerminalCheckRequest(BaseModel):
+    uuid: str
 
 # 更新
 class TerminalUpdateRequest(BaseModel):

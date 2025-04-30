@@ -13,7 +13,6 @@ from client.config import config
 from client.config.config import redis_client
 from client.config.logger import logger
 
-terminal_id = get_terminal_id()
 terminal_user = getpass.getuser().lower()
 report_url = config.server_url.rstrip("/") + "/api/client/process-report"
 
@@ -72,7 +71,12 @@ def is_user_process(p: psutil.Process) -> bool:
 
 # 采集所有用户进程
 def collect_process_info():
+    from client.agent.terminal.register import get_terminal_id
     process_list = []
+    terminal_id = get_terminal_id()
+    if not terminal_id:
+        logger.warning("[进程采集] 未获取到终端ID，跳过本次采集")
+        return []
     for p in psutil.process_iter():
         try:
             if not is_user_process(p):
@@ -144,10 +148,14 @@ def handle_command(cmd: dict):
             logger.error(f"终止进程失败: {e}")
 
 #  Redis 订阅监听线程
-def listen_for_commands():
+def listen_for_commands(terminal_id):
+    if not terminal_id:
+        logger.error("[监听异常] terminal_id为空，无法启动指令监听")
+        return
+
     pubsub = redis_client.pubsub()
     pubsub.subscribe(f"terminal:cmd:{terminal_id}")
-    logger.info(f"正在监听 Redis 指令 terminal:cmd:{terminal_id}")
+    logger.info(f"[监听Redis指令] 正在监听 terminal:cmd:{terminal_id}")
 
     for msg in pubsub.listen():
         if msg['type'] == 'message':

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends
 
 from model.monitor.process_monitor_model import ProcessReport, KillProcessRequest
-from model.terminal_admin.terminal_model import TerminalRegisterRequest, TerminalStatusUpdate, TerminalUpdateRequest
+from model.terminal_admin.terminal_model import TerminalRegisterRequest, TerminalStatusUpdate, TerminalUpdateRequest, \
+    TerminalCheckRequest
 from service.control.process_service import get_process_list
 from service.control.website_service import get_rules_grouped_by_type
 from service.monitor.process_monitor_service import save_process_to_redis, send_kill_command
@@ -20,6 +21,12 @@ def api_register_terminal(data: TerminalRegisterRequest):
             message="缺少终端唯一标识符 uuid"
         )
     return register_terminal(data)
+
+@router.post("/check-register")
+def api_check_register(data: TerminalCheckRequest):
+    from service.terminal_admin.terminal_service import check_terminal_registered
+    return check_terminal_registered(data.uuid)
+
 
 # 终端信息更新接口
 @router.post("/update")
