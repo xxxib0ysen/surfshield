@@ -2,14 +2,10 @@ import os
 import logging
 from logging.handlers import TimedRotatingFileHandler
 
-# 日志目录
-log_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
-os.makedirs(log_dir, exist_ok=True)
+from client.config import config
 
-# 日志文件基础名
-log_base_filename = os.path.join(log_dir, "surfshield")
+log_base_filename = os.path.join(config.base_path, "surfshield")
 
-# 创建日志器
 logger = logging.getLogger("client_logger")
 logger.setLevel(logging.DEBUG)
 

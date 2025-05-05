@@ -1,6 +1,7 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
+
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 import atexit
 import signal
@@ -9,8 +10,7 @@ import requests
 from threading import Thread
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTimer
-
-from config import config
+from client.config import config
 from client.config.logger import logger
 from client.agent.init import initialize_backend
 from client.gui.splash import SplashWindow

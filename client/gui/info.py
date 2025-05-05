@@ -30,9 +30,6 @@ def bind_terminal_info(main_window):
 
 def bind_runtime_info(main_window):
     try:
-        # 设置版本号
-        main_window.label_client_version.setText("客户端版本号：v1.0.0")
-
         # 启动定时器：每秒刷新时间
         timer_time = QTimer(main_window)
         timer_time.timeout.connect(lambda: update_current_time(main_window))

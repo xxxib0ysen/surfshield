@@ -3,8 +3,10 @@ import os
 from datetime import datetime, date
 from PyQt5.QtCore import QTimer
 
+from client.config import config
+
 # 拦截信息存储路径
-INTERCEPT_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs", "intercept_info.json")
+INTERCEPT_PATH = config.intercept_info_path
 os.makedirs(os.path.dirname(INTERCEPT_PATH), exist_ok=True)
 
 # 默认结构

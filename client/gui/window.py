@@ -73,9 +73,9 @@ class MainWindow(QWidget):
         # 右栏 - 版本信息
         right_layout = QVBoxLayout()
         version_title = QLabel("[版本信息]")
-        self.label_client_version = QLabel("客户端版本号：v1.0.0")
+        self.label_version = QLabel(f"客户端版本号：{config.version}")
         self.label_run_days = QLabel("运行天数：--天")
-        for label in [version_title, self.label_client_version, self.label_run_days]:
+        for label in [version_title, self.label_version, self.label_run_days]:
             label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
             right_layout.addWidget(label)
         right_layout.addStretch()
@@ -166,3 +166,18 @@ class MainWindow(QWidget):
     def check_update(self):
         pass
 
+def read_version_from_file():
+    try:
+        base_path = getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(__file__)))
+        version_file = os.path.join(base_path, 'version.txt')
+        with open(version_file, 'r', encoding='utf-8') as f:
+            return f.read().strip()
+    except Exception as e:
+        print(f"读取版本号失败: {e}")
+        return "未知版本"
+
+
+# 问题1、实际上我会将客户端打包成exe程序，所以版本号也是会更新变化的；
+# 问题2、运行天数现在的逻辑是从程序运行开始算，如果到时候我会让终端用户常驻后台运行客户端，是不是也是一样的？
+# 问题3、检查更新，需要有实际逻辑；且点击检查更新会跳转到新窗口，类似于，且有加载检测的动画；
+# 窗口都是独立的，各个窗口都能同时操作，但是新窗口弹出时是置于旧窗口上面的
