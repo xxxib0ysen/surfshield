@@ -49,6 +49,7 @@ def get_active_rules():
 
 
 def scan_and_kill(rules: list):
+    logger.info(f"[进程拦截] 当前规则列表：{rules}")
     for proc in psutil.process_iter(['pid', 'name', 'exe']):
         try:
             pname = (proc.info['name'] or '').lower()
@@ -62,8 +63,8 @@ def scan_and_kill(rules: list):
                     # 拦截记录 + UI 更新
                     record_process_block()
                     break
-        except Exception:
-            continue
+        except Exception as e:
+            logger.warning(f"[进程终止异常] 无法终止进程 {proc.pid}: {e}")
 
 
 def run_process_guard():

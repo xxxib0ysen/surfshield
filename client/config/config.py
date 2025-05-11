@@ -30,7 +30,7 @@ process_sync_endpoint = "/api/client/process/list"
 terminal_register_endpoint = "/api/client/register"
 
 # 扫描周期（秒）
-process_scan_interval = 600
+process_scan_interval = 5
 
 # 路径配置
 log_file_path = os.path.join(base_path, "intercept.log")
