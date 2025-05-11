@@ -98,11 +98,24 @@ def record_process_block():
 # 规则同步后调用
 def update_rule_sync(web_rule_count=None, process_rule_count=None, sync_time=None):
     from client.gui.context import main_window_instance
-    if not main_window_instance:
-        return
-    info = main_window_instance.intercept_info
+
     if sync_time is None:
         sync_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    if not main_window_instance:
+        # 主界面未加载
+        info = load_info()
+        if web_rule_count is not None:
+            info["web_rule_count"] = web_rule_count
+            info["last_web_rule_sync"] = sync_time
+        if process_rule_count is not None:
+            info["process_rule_count"] = process_rule_count
+            info["last_process_rule_sync"] = sync_time
+        save_info(info)
+        return
+
+    # 主界面已加载
+    info = main_window_instance.intercept_info
     if web_rule_count is not None:
         info["web_rule_count"] = web_rule_count
         info["last_web_rule_sync"] = sync_time
@@ -111,3 +124,4 @@ def update_rule_sync(web_rule_count=None, process_rule_count=None, sync_time=Non
         info["last_process_rule_sync"] = sync_time
     save_info(info)
     refresh_all_ui(main_window_instance)
+

@@ -8,15 +8,16 @@ from client.agent.terminal.register import get_terminal_id
 from client.config.config import redis_client
 from client.config.logger import logger
 
-# 获取当前终端 ID
-terminal_id = get_terminal_id()
-
 last_ts = (time() + 11644473600) * 1_000_000
 last_search_keywords = {}
 
 # 写入网页访问记录到 Redis
 def record_web_visit(record):
     try:
+        terminal_id = get_terminal_id()
+        if not terminal_id:
+            logger.warning("[行为采集] 终端 ID 获取失败，跳过网页访问写入")
+            return
         key = f"behavior:web:{terminal_id}"
 
         # 写入 Redis 列表，最多保留 20 条
@@ -70,6 +71,10 @@ def extract_keyword(url):
 # 写入搜索关键词记录到 Redis
 def record_search_behavior(record):
     try:
+        terminal_id = get_terminal_id()
+        if not terminal_id:
+            logger.warning("[行为采集] 终端 ID 获取失败，跳过搜索关键词写入")
+            return
         # 仅处理搜索引擎页面
         if not is_search_engine(record["url"]):
             return
@@ -100,7 +105,8 @@ def record_search_behavior(record):
 # 行为采集循环线程
 def behavior_loop():
     global last_ts
-
+    logger.info(f"[行为采集模块] 启动线程成功，初始时间戳：{last_ts}")
+    logger.info(f"[行为采集模块] 当前终端 ID 为：{get_terminal_id()}")
     while True:
         try:
             # 提取所有浏览器中的新增历史记录
