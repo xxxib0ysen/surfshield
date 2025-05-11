@@ -6,7 +6,9 @@ from PyQt5.QtCore import QCoreApplication, QTimer
 
 from client.agent.control.intercept import start_network_intercept
 from client.agent.control.process_control import run_process_guard
-from client.agent.control.rule_sync import sync_rules
+from client.agent.control.rule_sync import sync_rules, global_rules
+from client.agent.proxy.pac_generator import generate_pac_file
+from client.agent.proxy.proxy_config import set_pac_config, is_pac_config_correct
 from client.agent.terminal.behavior import start_behavior_capture
 from client.agent.terminal.process_monitor import start_process_report_loop, listen_for_commands
 from client.agent.terminal.register import get_terminal_id, report_terminal_status, startup_routine
@@ -82,6 +84,14 @@ def initialize_backend(splash):
         # 启动网络拦截
         splash.set_progress(30, "启动网络拦截模块...")
         smooth_progress(splash, 30, 45, duration_ms=600)
+        pac_path = generate_pac_file(global_rules)
+        if pac_path:
+            if not is_pac_config_correct(pac_path):
+                logger.warning("[PAC] 系统未正确设置 AutoConfigURL，正在修复...")
+                set_pac_config(pac_path)
+            else:
+                logger.info("[PAC] 系统 AutoConfigURL 检测通过")
+
         run_in_thread(start_network_intercept)
 
         # 启动进程守护

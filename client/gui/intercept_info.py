@@ -74,14 +74,31 @@ def refresh_all_ui(main_window):
 # 网站拦截统计
 def record_website_block():
     from client.gui.context import main_window_instance
-    if not main_window_instance:
-        return
-    info = main_window_instance.intercept_info
-    reset_if_needed(info)
-    info["today_website_block"] += 1
-    info["total_website_block"] += 1
-    save_info(info)
-    refresh_all_ui(main_window_instance)
+    from client.gui.intercept_info import load_info, save_info, refresh_all_ui, reset_if_needed
+
+    print("[DEBUG] record_website_block 被调用 ✅")
+    try:
+        # 强制从文件重新加载，排除引用失效
+        info = load_info()
+        print(f"[DEBUG] 当前 today_website_block: {info['today_website_block']}, total: {info['total_website_block']}")
+        reset_if_needed(info)
+        info["today_website_block"] += 1
+        info["total_website_block"] += 1
+
+        try:
+            save_info(info)
+            print("[DEBUG] ✅ save_info 写入成功")
+        except Exception as e:
+            print(f"[ERROR] ❌ save_info 写入失败：{e}")
+
+        if main_window_instance:
+            main_window_instance.intercept_info = info
+            refresh_all_ui(main_window_instance)
+            print("[DEBUG] ✅ UI 已刷新")
+
+    except Exception as e:
+        print(f"[ERROR] ❌ record_website_block 执行失败：{e}")
+
 
 # 进程拦截统计
 def record_process_block():

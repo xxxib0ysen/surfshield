@@ -13,7 +13,7 @@ if getattr(sys, 'frozen', False):
     base_path = os.path.join(os.environ.get("ProgramData", "C:\\ProgramData"), "SurfShield")
 else:
     # 本地运行
-    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../logs"))
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../logs"))
 
 os.makedirs(base_path, exist_ok=True)
 
@@ -36,3 +36,10 @@ process_scan_interval = 5
 log_file_path = os.path.join(base_path, "intercept.log")
 process_log_path = os.path.join(base_path, "process_log.log")
 intercept_info_path = os.path.join(base_path, "intercept_info.json")
+
+def get_runtime_path(*rel_path):
+    """
+    本地运行：相对于 config.py 目录返回代理资源路径
+    """
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "agent", "proxy"))
+    return os.path.join(base_dir, *rel_path)

@@ -1,8 +1,9 @@
 import sys
 import os
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 import atexit
 import signal
@@ -17,6 +18,7 @@ from client.agent.init import initialize_backend
 from client.gui.splash import SplashWindow
 from client.gui.invite import show_error_message, InviteCodeDialog
 from client.agent.terminal.register import report_terminal_status, get_terminal_id, set_terminal_id, get_uuid
+from client.agent.proxy.proxy_config import clear_pac_config
 
 # 确保日志目录存在
 def ensure_log_dir():
@@ -29,6 +31,7 @@ def on_exit():
     terminal_id = get_terminal_id()
     if terminal_id:
         report_terminal_status(terminal_id, 0)
+    clear_pac_config()
 
 def main():
     print("客户端启动中...")
