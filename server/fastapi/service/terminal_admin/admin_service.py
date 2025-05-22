@@ -22,14 +22,38 @@ def get_admin_list(page: int, size: int):
             cursor.execute(count_sql)
             total = cursor.fetchone()["total"]
 
-            list_sql = """
-                select admin_id, admin_name, role_id, description, status, createdon 
-                from sys_admin where 1=1 
-            """
-            list_sql += " order by createdon desc limit %s offset %s"
-            cursor.execute(list_sql, [size, offset])
-            data = cursor.fetchall()
-            data = format_time_in_rows(data, ['createdon'])
+            # 如果是第一页，单独查询 admin 并置顶
+            if page == 1:
+                # 获取 admin 用户
+                cursor.execute("""
+                                select admin_id, admin_name, role_id, description, status, createdon 
+                                from sys_admin where admin_name = 'admin'
+                            """)
+                admin_row = cursor.fetchone()
+
+                list_sql = """
+                                    select admin_id, admin_name, role_id, description, status, createdon 
+                                    from sys_admin 
+                                    where admin_name != 'admin'
+                                    order by createdon desc
+                                    limit %s offset %s
+                                """
+                cursor.execute(list_sql, [size - 1 if admin_row else size, 0])
+                others = cursor.fetchall()
+                data = ([admin_row] if admin_row else []) + others
+                data = format_time_in_rows(data, ['createdon'])
+            else:
+                # 非第一页，直接查所有（排除 admin）
+                list_sql = """
+                                    select admin_id, admin_name, role_id, description, status, createdon 
+                                    from sys_admin 
+                                    where admin_name != 'admin'
+                                    order by createdon desc
+                                    limit %s offset %s
+                                """
+                cursor.execute(list_sql, [size, offset])
+                data = cursor.fetchall()
+                data = format_time_in_rows(data, ['createdon'])
             return success_response(data={"total": total, "data": data})
     finally:
         conn.close()

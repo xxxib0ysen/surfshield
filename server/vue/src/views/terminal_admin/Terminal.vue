@@ -5,12 +5,6 @@
       <!-- 左侧 -->
       <el-col :span="4">
         <el-card shadow="never">
-          <el-input
-            v-model="groupFilter"
-            placeholder="输入关键字进行过滤"
-            clearable
-            style="margin-bottom: 16px;"
-          />
           <el-tree
             class="group-tree"
             :data="groupList"
@@ -337,7 +331,6 @@ const getAllGroupIds = (node) => {
 
 // 分组筛选
 const defaultProps = { children: 'children', label: 'group_name' }
-const groupFilter = ref('')
 const filterGroup = (value, data) => data.group_name.includes(value)
 const handleGroupClick = (node) => {
   selectedGroupId.value = node.group_id

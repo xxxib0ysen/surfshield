@@ -39,9 +39,9 @@ def add_admin(
 
 @router.put("/update/{admin_id}", summary="编辑管理员信息")
 def update_admin(
-    _: None = Depends(log_context_dependency),
+    admin: AdminUpdate,
     admin_id: int = None,
-    admin: AdminUpdate = Depends(),
+    _: None = Depends(log_context_dependency),
     _p=Depends(check_permission("admin:edit"))
 ):
     return admin_service.update_admin(

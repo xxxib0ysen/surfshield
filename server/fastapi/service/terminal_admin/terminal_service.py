@@ -120,20 +120,30 @@ def move_terminal_to_group(data: TerminalMoveGroup):
     try:
         conn = create_connection()
         cursor = conn.cursor()
+
+        # 获取新分组的名称和路径
+        cursor.execute("select group_name from sys_group where group_id = %s", (data.group_id,))
+        group = cursor.fetchone()
+        if not group:
+            return error_response(code=HTTP_BAD_REQUEST, message="目标分组不存在")
+
+        group_name = group["group_name"]
+        group_path = get_group_path(conn, data.group_id)
+
+        # 执行批量更新 group_id、group_name、group_path
         format_strings = ",".join(["%s"] * len(data.ids))
-        sql = f"update sys_terminal set group_id = %s where id in ({format_strings})"
-        cursor.execute(sql, [data.group_id] + data.ids)
+        sql = f"""
+            update sys_terminal 
+            set group_id = %s, group_name = %s, group_path = %s
+            where id in ({format_strings})
+        """
+        cursor.execute(sql, [data.group_id, group_name, group_path] + data.ids)
         conn.commit()
 
-        return success_response(
-            code=HTTP_OK,
-            message="移动成功"
-        )
+        return success_response(code=HTTP_OK, message="移动成功")
     except Exception as e:
-        return error_response(
-            code=HTTP_BAD_REQUEST,
-            message=f"移动失败: {str(e)}"
-        )
+        return error_response(code=HTTP_BAD_REQUEST, message=f"移动失败: {str(e)}")
+
 
 # 获取分组完整路径
 def get_group_path(conn, group_id: int) -> str:

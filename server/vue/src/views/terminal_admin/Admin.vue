@@ -12,7 +12,8 @@
             <RefreshRight />
           </el-icon>
         </el-button>
-        <el-button v-has-perm="'admin:add'" size="mini" @click="openAddDialog" style="float:right;margin-right: 15px">新增用户</el-button>
+        <el-button v-has-perm="'admin:add'" size="mini" @click="openAddDialog"
+          style="float:right;margin-right: 15px">新增用户</el-button>
       </el-card>
 
       <!-- 数据表格 -->
@@ -28,15 +29,23 @@
         <el-table-column prop="description" label="说明" />
         <el-table-column label="启用状态" width="140">
           <template #default="scope">
-            <el-switch v-has-perm="'admin:disable'" :model-value="scope.row.status" :active-value="1" :inactive-value="0"
-              @change="val => confirmToggleStatus(scope.row.admin_id, val)" />
+            <el-switch v-has-perm="'admin:disable'" :model-value="scope.row.status" :active-value="1"
+              :inactive-value="0" @change="val => confirmToggleStatus(scope.row.admin_id, val)" />
           </template>
         </el-table-column>
         <el-table-column label="操作" width="240">
           <template #default="scope">
-            <el-button v-has-perm="'admin:edit'" type="text" icon="Edit" @click="openEditDialog(scope.row)">编辑</el-button>
-            <el-button v-has-perm="'admin:reset'" type="text" icon="Refresh" @click="confirmReset(scope.row)">重置密码</el-button>
-            <el-button  v-has-perm="'admin:delete'" type="text" icon="Delete" @click="confirmDelete(scope.row.admin_id)">删除</el-button>
+            <template v-if="scope.row.admin_name !== 'admin'">
+              <el-button v-has-perm="'admin:edit'" type="text" icon="Edit"
+                @click="openEditDialog(scope.row)">编辑</el-button>
+              <el-button v-has-perm="'admin:reset'" type="text" icon="Refresh"
+                @click="confirmReset(scope.row)">重置密码</el-button>
+              <el-button v-has-perm="'admin:delete'" type="text" icon="Delete"
+                @click="confirmDelete(scope.row.admin_id)">删除</el-button>
+            </template>
+            <template v-else>
+              <el-tag type="info">超级管理员</el-tag>
+            </template>
           </template>
         </el-table-column>
       </el-table>
@@ -110,7 +119,10 @@ const loadData = async () => {
   try {
     const res = await getAdminList(query.value)
     if (res.data.code === 200) {
-      tableData.value = res.data.data.data
+      const allAdmins = res.data.data.data
+      const adminUser = allAdmins.find(item => item.admin_name === 'admin')
+      const others = allAdmins.filter(item => item.admin_name !== 'admin')
+      tableData.value = adminUser ? [adminUser, ...others] : others
       total.value = res.data.data.total
     } else {
       ElMessage.error(res.data.data.message || '获取列表失败')

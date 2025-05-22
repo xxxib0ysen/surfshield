@@ -16,7 +16,7 @@ router = APIRouter()
 def api_get_terminal_list(query: TerminalQuery = Depends(), group_id: Optional[str] = Query(None),
                           _=Depends(log_context_dependency), _p=Depends(check_permission("terminal:list"))):
     group_ids = [int(i) for i in group_id.split(",")] if group_id else None
-    return get_terminal_list(query, group_id)
+    return get_terminal_list(query, group_ids)
 
 # 获取终端详情
 @router.get("/detail/{terminal_id}")
